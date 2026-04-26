@@ -1,0 +1,438 @@
+```react
+import React, { useState, useEffect } from 'react';
+import { Gamepad2, Clock, User, QrCode, ShieldCheck, CheckCircle2, History, LogOut, Sparkles, Bot, Zap, Settings, Plus, Edit2, Trash2, Save } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+
+// ==========================================
+// FIREBASE INITIALIZATION
+// ==========================================
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+export default function App() {
+  // --- STATE MANAGEMENT ---
+  const [user, setUser] = useState(null); // App user (Normal or Admin)
+  const [firebaseUser, setFirebaseUser] = useState(null); // Firebase Auth user
+  const [currentView, setCurrentView] = useState('home');
+  const [joinedMatches, setJoinedMatches] = useState([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Database se aane wale tournaments
+  const [tournaments, setTournaments] = useState([]);
+
+  // 1. Handle Time
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 2. Handle Firebase Auth (Mandatory before DB access)
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("Auth Error:", err);
+      }
+    };
+    initAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (u) => setFirebaseUser(u));
+    return () => unsubscribe();
+  }, []);
+
+  // 3. Fetch Data from Firestore
+  useEffect(() => {
+    if (!firebaseUser) return; // Wait for auth
+
+    const tournamentsRef = collection(db, 'artifacts', appId, 'public', 'data', 'tournaments');
+    
+    const unsubscribe = onSnapshot(tournamentsRef, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Sort by hour so they appear in correct time order
+      data.sort((a, b) => a.hour - b.hour);
+      setTournaments(data);
+    }, (error) => {
+      console.error("Firestore Error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [firebaseUser]);
+
+  const currentHour = currentTime.getHours();
+  const isWebsiteActive = currentHour >= 13 && currentHour <= 23; // 1 PM to 11 PM
+
+  // --- LOGIN VIEW ---
+  if (!user) {
+    return <AuthScreen onLogin={(userData) => setUser(userData)} />;
+  }
+
+  const isAdmin = user.isAdmin;
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100 font-sans">
+      {/* HEADER */}
+      <header className="bg-gray-900 border-b border-red-900/50 p-4 sticky top-0 z-10">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView('home')}>
+            <div className="bg-red-600 p-2 rounded-lg">
+              <Gamepad2 size={24} className="text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400">
+              APEX HUB
+            </h1>
+            {isAdmin && <span className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full ml-2">ADMIN</span>}
+          </div>
+          
+          <button 
+            onClick={() => { setUser(null); setCurrentView('home'); }}
+            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <LogOut size={20} />
+          </button>
+        </div>
+      </header>
+
+      {/* NAVIGATION TABS */}
+      <div className="max-w-md mx-auto flex border-b border-gray-800 bg-gray-900/50 overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <button 
+          onClick={() => setCurrentView('home')}
+          className={`px-4 py-3 text-sm font-semibold flex items-center gap-2 ${currentView === 'home' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-400'}`}
+        >
+          <Gamepad2 size={18} /> Matches
+        </button>
+        {!isAdmin && (
+          <button 
+            onClick={() => setCurrentView('my-tournaments')}
+            className={`px-4 py-3 text-sm font-semibold flex items-center gap-2 ${currentView === 'my-tournaments' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-400'}`}
+          >
+            <History size={18} /> My Games
+          </button>
+        )}
+        <button 
+          onClick={() => setCurrentView('ai-coach')}
+          className={`px-4 py-3 text-sm font-semibold flex items-center gap-2 ${currentView === 'ai-coach' ? 'text-yellow-500 border-b-2 border-yellow-500' : 'text-gray-400'}`}
+        >
+          <Sparkles size={18} /> AI Coach
+        </button>
+        {isAdmin && (
+          <button 
+            onClick={() => setCurrentView('admin-panel')}
+            className={`px-4 py-3 text-sm font-semibold flex items-center gap-2 ${currentView === 'admin-panel' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-400'}`}
+          >
+            <Settings size={18} /> Admin Panel
+          </button>
+        )}
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <main className="max-w-md mx-auto p-4 pb-20">
+        {currentView === 'home' && (
+          <HomeView 
+            isWebsiteActive={isWebsiteActive} 
+            currentTime={currentTime}
+            tournaments={tournaments}
+            joinedMatches={joinedMatches}
+            setJoinedMatches={setJoinedMatches}
+          />
+        )}
+        {currentView === 'my-tournaments' && !isAdmin && (
+          <MyTournamentsView 
+            currentTime={currentTime}
+            tournaments={tournaments}
+            joinedMatches={joinedMatches}
+          />
+        )}
+        {currentView === 'ai-coach' && <AICoachView />}
+        {currentView === 'admin-panel' && isAdmin && (
+          <AdminDashboard tournaments={tournaments} />
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ==========================================
+// ADMIN DASHBOARD (Control Room)
+// ==========================================
+function AdminDashboard({ tournaments }) {
+  const [newMatch, setNewMatch] = useState({ hour: 13, label: '1:00 PM', fee: 20, prize: 200, roomId: '', roomPass: '' });
+  const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+
+  const handleAddTournament = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'tournaments');
+      await addDoc(collectionRef, {
+        hour: Number(newMatch.hour),
+        label: newMatch.label,
+        fee: Number(newMatch.fee),
+        prize: Number(newMatch.prize),
+        roomId: newMatch.roomId,
+        roomPass: newMatch.roomPass
+      });
+      alert("Tournament Added!");
+    } catch (err) {
+      console.error(err);
+      alert("Error adding tournament.");
+    }
+    setLoading(false);
+  };
+
+  const handleUpdate = async (id) => {
+    try {
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tournaments', id);
+      await updateDoc(docRef, {
+        roomId: editForm[id]?.roomId || '',
+        roomPass: editForm[id]?.roomPass || '',
+        fee: Number(editForm[id]?.fee || 0),
+        prize: Number(editForm[id]?.prize || 0)
+      });
+      setEditingId(null);
+    } catch (err) {
+      console.error(err);
+      alert("Error updating.");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if(!window.confirm("Are you sure you want to delete this match?")) return;
+    try {
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tournaments', id);
+      await deleteDoc(docRef);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const startEditing = (t) => {
+    setEditingId(t.id);
+    setEditForm({ ...editForm, [t.id]: { roomId: t.roomId, roomPass: t.roomPass, fee: t.fee, prize: t.prize } });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-blue-900/20 border border-blue-500/50 rounded-xl p-6 text-center">
+        <Settings size={40} className="mx-auto text-blue-500 mb-2" />
+        <h2 className="text-xl font-bold text-blue-400">Admin Control Room</h2>
+        <p className="text-gray-400 text-xs mt-1">Yaha se aap website ka data control kar sakte ho.</p>
+      </div>
+
+      <div className="bg-gray-900 p-4 rounded-xl border border-gray-800">
+        <h3 className="font-bold text-gray-300 mb-4 flex items-center gap-2"><Plus size={18}/> Create New Match</h3>
+        <form onSubmit={handleAddTournament} className="space-y-3 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-gray-500 text-xs">Hour (24h format, e.g. 13 for 1 PM)</label>
+              <input type="number" value={newMatch.hour} onChange={e => setNewMatch({...newMatch, hour: e.target.value})} className="w-full bg-gray-950 border border-gray-700 p-2 rounded text-white" required />
+            </div>
+            <div>
+              <label className="text-gray-500 text-xs">Label (e.g. 1:00 PM)</label>
+              <input type="text" value={newMatch.label} onChange={e => setNewMatch({...newMatch, label: e.target.value})} className="w-full bg-gray-950 border border-gray-700 p-2 rounded text-white" required />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-gray-500 text-xs">Entry Fee (₹)</label>
+              <input type="number" value={newMatch.fee} onChange={e => setNewMatch({...newMatch, fee: e.target.value})} className="w-full bg-gray-950 border border-gray-700 p-2 rounded text-white" required />
+            </div>
+            <div>
+              <label className="text-gray-500 text-xs">Prize (₹)</label>
+              <input type="number" value={newMatch.prize} onChange={e => setNewMatch({...newMatch, prize: e.target.value})} className="w-full bg-gray-950 border border-gray-700 p-2 rounded text-white" required />
+            </div>
+          </div>
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg mt-2">
+            {loading ? 'Saving...' : 'Add Tournament'}
+          </button>
+        </form>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="font-bold text-gray-300 border-b border-gray-800 pb-2">Manage Live Tournaments</h3>
+        
+        {tournaments.length === 0 && <p className="text-gray-500 text-sm">No tournaments in database. Please create one.</p>}
+
+        {tournaments.map(t => (
+          <div key={t.id} className="bg-gray-900 border border-gray-800 rounded-lg p-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-bold text-red-400">{t.label} Match</span>
+              <div className="flex gap-2">
+                <button onClick={() => startEditing(t)} className="text-gray-400 hover:text-white bg-gray-800 p-1.5 rounded"><Edit2 size={14}/></button>
+                <button onClick={() => handleDelete(t.id)} className="text-gray-400 hover:text-red-500 bg-gray-800 p-1.5 rounded"><Trash2 size={14}/></button>
+              </div>
+            </div>
+
+            {editingId === t.id ? (
+              <div className="space-y-2 mt-3 pt-3 border-t border-gray-800">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <input type="number" placeholder="Fee" value={editForm[t.id]?.fee} onChange={e => setEditForm({...editForm, [t.id]: {...editForm[t.id], fee: e.target.value}})} className="bg-gray-950 border border-gray-700 p-1.5 rounded text-white" />
+                  <input type="number" placeholder="Prize" value={editForm[t.id]?.prize} onChange={e => setEditForm({...editForm, [t.id]: {...editForm[t.id], prize: e.target.value}})} className="bg-gray-950 border border-gray-700 p-1.5 rounded text-white" />
+                  <input type="text" placeholder="Room ID" value={editForm[t.id]?.roomId} onChange={e => setEditForm({...editForm, [t.id]: {...editForm[t.id], roomId: e.target.value}})} className="bg-gray-950 border border-gray-700 p-1.5 rounded text-white" />
+                  <input type="text" placeholder="Password" value={editForm[t.id]?.roomPass} onChange={e => setEditForm({...editForm, [t.id]: {...editForm[t.id], roomPass: e.target.value}})} className="bg-gray-950 border border-gray-700 p-1.5 rounded text-white" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleUpdate(t.id)} className="flex-1 bg-green-600 hover:bg-green-500 text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-1"><Save size={14}/> Save</button>
+                  <button onClick={() => setEditingId(null)} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+                <div>Fee: ₹{t.fee} | Prize: ₹{t.prize}</div>
+                <div className="text-right">Room: {t.roomId ? <span className="text-green-400">{t.roomId}</span> : <span className="text-yellow-500">Not Set</span>}</div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// HOME VIEW (TOURNAMENT LIST)
+// ==========================================
+function HomeView({ isWebsiteActive, currentTime, tournaments, joinedMatches, setJoinedMatches }) {
+  if (!isWebsiteActive) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
+        <Clock size={64} className="text-gray-600 mb-2" />
+        <h2 className="text-2xl font-bold text-gray-300">Website is Closed</h2>
+        <p className="text-gray-500">Bhai, Tournaments sirf dopahar <strong className="text-red-400">1:00 PM</strong> se raat <strong className="text-red-400">11:00 PM</strong> tak chalte hain.</p>
+        <p className="text-sm bg-gray-900 px-4 py-2 rounded-full border border-gray-800 text-gray-400 mt-4">
+          Time: {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit' })}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-red-900/20 border border-red-900/50 rounded-lg p-3 flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+          <span className="text-sm font-medium text-red-400">Tournaments are LIVE</span>
+        </div>
+        <span className="text-xs font-mono text-gray-400">
+          {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', second:'2-digit' })}
+        </span>
+      </div>
+
+      {tournaments.length === 0 ? (
+        <div className="text-center py-10 text-gray-500">
+          <p>No tournaments scheduled for today yet.</p>
+          <p className="text-xs mt-2">(Admins can add tournaments from Admin Panel)</p>
+        </div>
+      ) : (
+        tournaments.map(tournament => (
+          <TournamentCard 
+            key={tournament.id}
+            data={tournament}
+            currentTime={currentTime}
+            isJoined={joinedMatches.includes(tournament.id)}
+            onJoin={() => setJoinedMatches([...joinedMatches, tournament.id])}
+          />
+        ))
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// MY TOURNAMENTS VIEW
+// ==========================================
+function MyTournamentsView({ currentTime, tournaments, joinedMatches }) {
+  const myGames = tournaments.filter(t => joinedMatches.includes(t.id));
+
+  if (myGames.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4 text-gray-500">
+        <History size={48} className="opacity-50" />
+        <p>Aapne abhi tak koi tournament join nahi kiya hai.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-bold text-gray-300 border-b border-gray-800 pb-2">Aapke Matches</h2>
+      {myGames.map(tournament => (
+         <TournamentCard key={tournament.id} data={tournament} currentTime={currentTime} isJoined={true} onJoin={() => {}} />
+      ))}
+    </div>
+  );
+}
+
+// ==========================================
+// TOURNAMENT CARD
+// ==========================================
+function TournamentCard({ data, currentTime, isJoined, onJoin }) {
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const currentHour = currentTime.getHours();
+  
+  const isTimeRevealed = currentHour >= data.hour; 
+  const isMatchOver = currentHour > data.hour; 
+
+  const handlePaymentSuccess = () => {
+    onJoin();
+    setShowPaymentModal(false);
+  };
+
+  return (
+    <>
+      <div className={`bg-gray-900 border rounded-xl overflow-hidden transition-all duration-300 ${isJoined ? 'border-green-600/50 shadow-[0_0_15px_rgba(22,163,74,0.1)]' : 'border-gray-800'}`}>
+        <div className="bg-gray-800/50 p-3 flex justify-between items-center border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-red-500" />
+            <span className="font-bold">{data.label} Match</span>
+          </div>
+          {isJoined && (
+            <span className="text-xs font-semibold bg-green-500/20 text-green-400 px-2 py-1 rounded-full flex items-center gap-1">
+              <CheckCircle2 size={12} /> Joined
+            </span>
+          )}
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="flex justify-between items-center text-sm">
+            <div className="text-center bg-gray-950 p-2 rounded-lg flex-1 mr-2 border border-gray-800">
+              <p className="text-gray-500 text-xs">Entry Fee</p>
+              <p className="font-bold text-white">₹{data.fee}</p>
+            </div>
+            <div className="text-center bg-gray-950 p-2 rounded-lg flex-1 ml-2 border border-gray-800">
+              <p className="text-gray-500 text-xs">Prize Pool</p>
+              <p className="font-bold text-yellow-500">₹{data.prize}</p>
+            </div>
+          </div>
+
+          {!isJoined ? (
+            <button 
+              onClick={() => setShowPaymentModal(true)}
+              disabled={isMatchOver}
+              className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${
+                isMatchOver 
+                ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 text-white shadow-lg'
+              }`}
+            >
+              {isMatchOver ? 'Match Over' : `Join Now (₹${data.fee})`}
+            </button>
+          ) : (
+            <div className="bg-gray-950 p-3 rounded-lg border border-gray-800">
+              {isTimeRevealed ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-green-400 text-center mb-2 font-medium">Room Details are LIVE!</p>
+                  <div className="flex justify-between items-center bg-gray-900 p-2 rounded border border-gray-700">
+                    <span className="text-gray-400 text-xs">Room ID:</span>
+                    <span className="font-mono font-bold tracking-wider">{data.roomId || 'Wait...'}</
