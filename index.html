@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Apex Hub - Official Portal</title>
     
-    <!-- CSS & Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -72,24 +70,20 @@
           const [ready, setReady] = useState(false);
 
           useEffect(() => {
-            auth.signInAnonymously().then(() => {
-                const root = db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data');
-                
-                // Live Match Sync
-                root.collection('matches').onSnapshot(s => {
-                    const all = s.docs.map(d=>({id: d.id, ...d.data()}));
-                    const activeOnly = all.filter(m => (Date.now() - (m.createdAt || 0)) < 86400000);
-                    setMatches(activeOnly.sort((a,b)=>a.hour - b.hour));
-                });
+            // Live Match Sync
+            const root = db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data');
+            
+            root.collection('matches').onSnapshot(s => {
+                const all = s.docs.map(d=>({id: d.id, ...d.data()}));
+                const activeOnly = all.filter(m => (Date.now() - (m.createdAt || 0)) < 86400000);
+                setMatches(activeOnly.sort((a,b)=>a.hour - b.hour));
+            });
 
-                // Live Registration Sync
-                root.collection('registrations').onSnapshot(s => setRegs(s.docs.map(d=>({id: d.id, ...d.data()}))));
+            root.collection('registrations').onSnapshot(s => setRegs(s.docs.map(d=>({id: d.id, ...d.data()}))));
 
-                // Live Master Player Sync
-                root.collection('users').onSnapshot(s => {
-                    setPlayers(s.docs.map(d=>({id: d.id, ...d.data()})));
-                    setReady(true);
-                });
+            root.collection('users').onSnapshot(s => {
+                setPlayers(s.docs.map(d=>({id: d.id, ...d.data()})));
+                setReady(true);
             });
           }, []);
 
@@ -405,21 +399,32 @@
              if(!id || !pw) return alert("Fill all fields!");
              setLoad(true); setErr('');
 
-             if(mode === 'register') {
-                if(!fign || !fuid) { alert("Details missing!"); setLoad(false); return; }
-                const ex = players.find(u => u.mobile === id);
-                if(ex) { setErr('Already in Database! Sign In.'); setLoad(false); }
-                else { 
-                   const userData = { mobile: id, pw, ign: fign, uid: fuid };
-                   await db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('users').add({ ...userData, isAdmin: false, streak: [] });
+             // Email format handle
+             const finalEmail = id.includes('@') ? id : `${id}@apex.com`;
+
+             try {
+                if(mode === 'register') {
+                   if(!fign || !fuid) { alert("Details missing!"); setLoad(false); return; }
+                   
+                   // 1. Authenticate user properly
+                   await auth.createUserWithEmailAndPassword(finalEmail, pw);
+                   
+                   // 2. Save detailed profile to Firestore
+                   const userData = { mobile: id, email: finalEmail, pw, ign: fign, uid: fuid, isAdmin: false, streak: [] };
+                   await db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('users').add(userData);
+                   
                    onAuth(userData);
+                } else {
+                   if(id === 'admin' && pw === 'admin') onAuth({mobile:'admin', ign:'Elite Master Admin', isAdmin:true});
+                   else {
+                      // Login via Firebase Auth
+                      await auth.signInWithEmailAndPassword(finalEmail, pw);
+                      const u = players.find(x => x.mobile === id || x.email === finalEmail);
+                      if(u) onAuth(u); else { setErr('Access Denied: Invalid Credentials.'); setLoad(false); }
+                   }
                 }
-             } else {
-                if(id === 'admin' && pw === 'admin') onAuth({mobile:'admin', ign:'Elite Master Admin', isAdmin:true});
-                else {
-                   const u = players.find(x => x.mobile === id && x.pw === pw);
-                   if(u) onAuth(u); else { setErr('Access Denied: Invalid Credentials.'); setLoad(false); }
-                }
+             } catch (error) {
+                setErr(error.message);
              }
              setLoad(false);
           };
@@ -457,5 +462,3 @@
     </script>
 </body>
 </html>
-
-```
