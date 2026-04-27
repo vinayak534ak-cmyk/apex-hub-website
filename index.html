@@ -2,432 +2,214 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex Hub - Official Portal</title>
-    
-    <!-- Stable Dependencies -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Firebase SDK (Compat) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Hub | Esports Tournaments</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; margin: 0; padding: 0; overflow-x: hidden; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .text-gold { color: #facc15; }
-        .bg-gold { background-color: #facc15; }
-        .btn-gold { background-color: #facc15; color: #000; font-weight: 900; border-bottom: 4px solid #a16207; }
-        .btn-gold:active { transform: translateY(2px); border-bottom-width: 2px; }
-        .slot-fill { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
-        .card-dark { background: #0a0a0a; border: 1px solid #1a1a1a; }
-        .mission-log { border-left: 4px solid #facc15; background: #0d0d0d; }
+        :root {
+            --bg-dark: #0f0f13;
+            --bg-card: #1c1c24;
+            --primary: #00ffcc;
+            --primary-hover: #00e6b8;
+            --text-main: #ffffff;
+            --text-muted: #a0a0b0;
+            --danger: #ff4757;
+            --warning: #ffa502;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* Typography & Layout */
+        h1, h2, h3 { text-transform: uppercase; letter-spacing: 1px; }
+        .container { padding: 20px; flex-grow: 1; padding-bottom: 80px; }
+        .hidden { display: none !important; }
+        
+        /* Header */
+        header { background-color: var(--bg-card); padding: 15px 20px; text-align: center; border-bottom: 2px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        header h1 { color: var(--primary); font-size: 1.5rem; font-weight: 800; }
+
+        /* Forms & Inputs */
+        .form-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #121215; color: white; margin-top: 5px; outline: none; transition: border 0.3s; }
+        input:focus { border-color: var(--primary); }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--primary); color: #000; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: background 0.3s; margin-top: 10px; }
+        button:hover { background: var(--primary-hover); }
+        .toggle-link { color: var(--primary); text-align: center; display: block; margin-top: 15px; cursor: pointer; font-size: 0.9rem; }
+
+        /* Cards */
+        .card { background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #2a2a35; }
+        .card h3 { color: var(--primary); margin-bottom: 10px; }
+        .badge { background: var(--warning); color: #000; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        
+        /* Bottom Navigation */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-card); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #2a2a35; }
+        .nav-item { color: var(--text-muted); text-align: center; font-size: 0.8rem; cursor: pointer; flex: 1; padding: 5px; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+
+        /* Rules List */
+        .rules-list { list-style: none; }
+        .rules-list li { background: rgba(255, 71, 87, 0.1); border-left: 4px solid var(--danger); padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+
+        /* Profile Logos */
+        .circular-logo { width: 80px; height: 80px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; border: 2px solid var(--primary); }
+
     </style>
 </head>
 <body>
-    <div id="root">
-        <div class="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-gold font-black uppercase tracking-widest animate-pulse">
-            <div class="w-10 h-10 border-4 border-gold border-t-transparent rounded-full animate-spin mb-4"></div>
-            Arena Loading...
+
+    <header>
+        <h1 id="app-title">APEX HUB</h1>
+    </header>
+
+    <div id="auth-section" class="container">
+        <div id="login-box">
+            <h2>Player Login</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Enter the arena.</p>
+            <div class="form-group"><input type="tel" placeholder="Phone Number" id="login-phone"></div>
+            <div class="form-group"><input type="password" placeholder="Password" id="login-pass"></div>
+            <button onclick="login()">Login</button>
+            <span class="toggle-link" onclick="toggleAuth()">No account? Register Here</span>
+            <span class="toggle-link" onclick="showAdminLogin()" style="color: var(--text-muted);">Admin Login</span>
+        </div>
+
+        <div id="register-box" class="hidden">
+            <h2>Register</h2>
+            <div class="form-group"><input type="tel" placeholder="Phone Number" id="reg-phone"></div>
+            <div class="form-group"><input type="password" placeholder="Password" id="reg-pass"></div>
+            <div class="form-group"><input type="text" placeholder="In-Game Name (IGN)" id="reg-ign"></div>
+            <div class="form-group"><input type="text" placeholder="Free Fire UID" id="reg-uid"></div>
+            <button onclick="register()">Register & Auto-Login</button>
+            <span class="toggle-link" onclick="toggleAuth()">Already registered? Login</span>
         </div>
     </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { createRoot } = ReactDOM;
-
-        // --- FIREBASE CONFIG ---
-        const firebaseConfig = {
-          apiKey: "AIzaSyDzBQO4rlXQV5jTZzLopFp_WSvgSA_r5PQ",
-          authDomain: "apex-hub-1eee0.firebaseapp.com",
-          projectId: "apex-hub-1eee0",
-          storageBucket: "apex-hub-1eee0.firebasestorage.app",
-          messagingSenderId: "233220398385",
-          appId: "1:233220398385:web:83e623ab96dbb6130da410"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const masterKey = "APEX_SULTANPUR_PRODUCTION_V1"; // Global Persistent Path
-
-        function App() {
-          const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('apex_auth_v9') || 'null'));
-          const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
-          const [view, setView] = useState('arena');
-          const [gameTab, setGameTab] = useState('SOLO CS');
-          
-          const [matches, setMatches] = useState([]);
-          const [regs, setRegs] = useState([]);
-          const [players, setPlayers] = useState([]);
-          const [dbStatus, setDbStatus] = useState(false);
-
-          useEffect(() => {
-            auth.signInAnonymously().then(() => {
-                setDbStatus(true);
-                const root = db.collection('artifacts').doc(masterKey).collection('public').doc('data');
-                
-                root.collection('matches').onSnapshot(s => setMatches(s.docs.map(d=>({id: d.id, ...d.data()})).sort((a,b)=>a.hour - b.hour)));
-                root.collection('registrations').onSnapshot(s => setRegs(s.docs.map(d=>({id: d.id, ...d.data()}))));
-                root.collection('users').onSnapshot(s => setPlayers(s.docs.map(d=>({id: d.id, ...d.data()}))));
-            });
-          }, []);
-
-          useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [view, gameTab, user, authMode]);
-
-          const handleLogout = () => { localStorage.removeItem('apex_auth_v9'); setUser(null); };
-
-          if (!user) return <AuthScreen onAuth={(u) => { localStorage.setItem('apex_auth_v9', JSON.stringify(u)); setUser(u); }} players={players} ready={dbStatus} mode={authMode} setMode={setAuthMode} db={db} />;
-
-          return (
-            <div className="min-h-screen flex flex-col max-w-md mx-auto bg-[#050505] border-x border-[#111] shadow-2xl relative">
-              <header className="p-4 flex justify-between items-center bg-[#050505] border-b border-[#111] sticky top-0 z-50">
-                <div className="flex items-center gap-2">
-                  <div className="bg-gold p-1.5 rounded text-black"><i data-lucide="target" className="w-5 h-5"></i></div>
-                  <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">APEX HUB</h1>
-                </div>
-                <button onClick={handleLogout} className="p-2 bg-[#111] rounded text-red-500 shadow-inner active:scale-90 transition-all"><i data-lucide="log-out" className="w-4 h-4"></i></button>
-              </header>
-
-              <nav className="flex bg-[#050505] border-b border-[#111] sticky top-[61px] z-40">
-                <button onClick={()=>setView('arena')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest ${view==='arena'?'text-gold border-b-2 border-gold':'text-gray-500'}`}>Arena</button>
-                <button onClick={()=>setView('history')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest ${view==='history'?'text-gold border-b-2 border-gold':'text-gray-500'}`}>Missions</button>
-              </nav>
-
-              <main className="flex-1 p-5 pb-24 overflow-y-auto scrollbar-hide">
-                {view === 'arena' && <Arena matches={matches} regs={regs} tab={gameTab} setTab={setGameTab} user={user} db={db} />}
-                {view === 'history' && <History matches={matches} regs={regs} user={user} />}
-                {view === 'rewards' && <Rewards user={user} players={players} db={db} />}
-                {view === 'rules' && <Rules />}
-                {view === 'admin' && <AdminPanel matches={matches} regs={regs} players={players} db={db} />}
-              </main>
-
-              <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#050505] border-t border-[#111] flex justify-around p-3 z-50 backdrop-blur-md">
-                <NavBtn active={view==='arena'} icon="gamepad-2" onClick={()=>setView('arena')} />
-                <NavBtn active={view==='history'} icon="trophy" onClick={()=>setView('history')} />
-                <NavBtn active={view==='rewards'} icon="calendar" onClick={()=>setView('rewards')} />
-                <NavBtn active={view==='rules'} icon="info" onClick={()=>setView('rules')} />
-                {user.isAdmin && <NavBtn active={view==='admin'} icon="settings" onClick={()=>setView('admin')} />}
-              </nav>
+    <div id="dashboard-section" class="container hidden">
+        
+        <div id="view-all" class="view">
+            <h2>All Tournaments</h2>
+            <div class="card">
+                <h3>Daily Solo Clash</h3>
+                <p>Map: Bermuda | Mode: Solo</p>
+                <p>Entry: ₹10</p>
+                <button onclick="openJoinModal()">Join Tournament</button>
             </div>
-          );
-        }
+        </div>
 
-        const NavBtn = ({ active, icon, onClick }) => (
-          <button onClick={onClick} className={`p-2 transition-all ${active ? 'text-gold scale-125' : 'text-gray-600'}`}><i data-lucide={icon}></i></button>
-        );
-
-        function Arena({ matches, regs, tab, setTab, user, db }) {
-          const list = matches.filter(m => m.mode === tab);
-          return (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// ELITE BATTLEGROUND</p><h2 className="text-3xl font-black uppercase leading-none italic">AVAILABLE <span className="text-gold">DROPS</span></h2></div>
-              <div className="flex gap-2 pb-1 overflow-x-auto scrollbar-hide">
-                {['SOLO CS', 'SQUAD CS'].map(t => (
-                  <button key={t} onClick={()=>setTab(t)} className={`px-6 py-2 rounded text-[10px] font-black border tracking-tighter ${tab===t?'bg-gold text-black border-gold shadow-lg':'bg-[#111] text-gray-500 border-[#222]'}`}>{t}</button>
-                ))}
-              </div>
-              <div className="space-y-5">
-                {list.map(m => <MatchCard key={m.id} m={m} user={user} regs={regs} db={db} />)}
-                {list.length === 0 && <div className="py-20 text-center opacity-30 italic font-black uppercase text-xs">Awaiting Arena Deployment...</div>}
-              </div>
+        <div id="view-my" class="view hidden">
+            <h2>My Tournaments</h2>
+            <div class="card">
+                <h3>Daily Solo Clash <span class="badge">Pending</span></h3>
+                <p>Waiting for Admin Approval...</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Room ID & Pass will appear here once approved.</p>
             </div>
-          );
-        }
+        </div>
 
-        function MatchCard({ m, user, regs, db }) {
-          const [modal, setModal] = useState(false);
-          const [load, setLoad] = useState(false);
-          const [fign, setFign] = useState(user.ign || '');
-          const [fuid, setFuid] = useState(user.uid || '');
-          const [sq, setSq] = useState(['','','','']);
+        <div id="view-rules" class="view hidden">
+            <h2>Tournament Rules</h2>
+            <ul class="rules-list">
+                <li>No Revive Allowed</li>
+                <li>No Teaming Allowed</li>
+                <li>Hackers or Panel Users are Strictly Prohibited. Instant Ban.</li>
+            </ul>
+        </div>
 
-          const myReg = regs.find(r => r.matchId === m.id && r.mobile === user.mobile);
-          const approved = regs.filter(r => r.matchId === m.id && r.status === 'approved').length;
-          const progress = Math.min((approved / m.slots) * 100, 100);
-          const isLive = new Date().getHours() >= m.hour;
-
-          const join = async (utr) => {
-            if(!utr || !fign || !fuid) return alert("All details required!");
-            setLoad(true);
-            try {
-              await db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('registrations').add({
-                matchId: m.id, mobile: user.mobile, ign: fign, uid: fuid, utr,
-                status: 'pending', time: Date.now(), label: m.label, mode: m.mode,
-                squad: m.mode.includes('SQUAD') ? sq : null
-              });
-              setModal(false);
-            } catch(e) { alert("Join Error!"); }
-            setLoad(false);
-          };
-
-          return (
-            <div className="card-dark rounded-2xl overflow-hidden shadow-xl mb-4 transition-all hover:border-gold/30">
-              <div className="p-5 flex justify-between items-center bg-[#0d0d0d] border-b border-[#111]">
-                <div><h3 className="text-xl font-black italic uppercase leading-none">{m.label}</h3><p className="text-[9px] text-gray-600 font-bold uppercase mt-1 italic tracking-widest">{m.mode}</p></div>
-                {myReg ? (
-                   myReg.status === 'approved' ? <span className="bg-green-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase">Joined ✅</span> : 
-                   <span className="bg-[#111] text-gray-500 text-[9px] font-black px-3 py-1 rounded-full border border-[#222] animate-pulse">PENDING</span>
-                ) : (approved >= m.slots ? <span className="bg-red-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase">FULL</span> : <span className="text-gold text-[9px] font-black uppercase tracking-widest italic animate-pulse">Open Now</span>)}
-              </div>
-
-              <div className="p-5 space-y-4">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-[9px] font-black uppercase text-gray-500 tracking-widest"><span>Arena Slots</span><span>{approved} / {m.slots}</span></div>
-                  <div className="w-full h-1.5 bg-[#111] rounded-full border border-[#222] p-0.5"><div className="h-full bg-gold rounded-full slot-fill" style={{width:`${progress}%`}}></div></div>
-                </div>
-
-                {!myReg ? <button onClick={()=>setModal(true)} disabled={approved >= m.slots} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic font-black">Join Tournament</button> :
-                 myReg.status === 'pending' ? <button className="w-full bg-[#0a0a0a] border border-[#1a1a1a] text-gray-600 py-4 rounded-xl font-bold uppercase text-[10px] italic cursor-not-allowed">Checking Proof...</button> :
-                 <div className="bg-black p-4 rounded-xl border border-green-500/20 text-center space-y-2">
-                    {isLive ? <><div className="flex justify-between text-xs px-2 font-bold uppercase text-gray-500"><span>Room ID:</span><span className="text-green-500 font-mono font-black text-sm select-all">{m.roomId || 'WAIT'}</span></div><div className="flex justify-between text-xs px-2 font-bold uppercase text-gray-500"><span>Pass:</span><span className="text-green-500 font-mono font-black text-sm select-all">{m.roomPass || 'WAIT'}</span></div></> : <p className="text-[10px] text-gray-500 font-bold uppercase italic tracking-tighter italic">Details drop at {m.label}</p>}
-                 </div>}
-
-                <div className="grid grid-cols-2 gap-4 text-center border-t border-[#111] pt-3">
-                   <div><p className="text-[8px] text-gray-600 font-bold uppercase">Prize</p><p className="text-gold font-black text-sm">₹{m.prize}</p></div>
-                   <div><p className="text-[8px] text-gray-600 font-bold uppercase">Entry</p><p className="text-gold font-black text-sm">₹{m.fee}</p></div>
-                </div>
-              </div>
-
-              {modal && <div className="fixed inset-0 bg-black/98 backdrop-blur-xl z-[200] flex items-center justify-center p-6 overflow-y-auto">
-                <div className="bg-[#0f0f0f] border border-white/5 w-full rounded-[2.5rem] p-8 space-y-5 my-auto shadow-2xl relative animate-in zoom-in-95">
-                   <div className="text-center space-y-1"><h3 className="text-2xl font-black text-gold italic uppercase leading-none font-black italic tracking-tighter">Registration</h3><p className="text-[9px] text-gray-500 uppercase tracking-widest italic leading-none mt-1">Submit Details To Secure Slot</p></div>
-                   <img src="./1000087879.jpg" className="w-40 h-40 mx-auto rounded-2xl border-2 border-white shadow-2xl" />
-                   
-                   <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1"><label className="text-[8px] text-gray-600 uppercase font-black ml-1 italic">IGN Name</label><input type="text" value={fign} onChange={e=>setFign(e.target.value)} className="w-full bg-black border border-[#222] p-3 rounded-xl text-[10px] font-bold text-white outline-none focus:border-gold" /></div>
-                        <div className="space-y-1"><label className="text-[8px] text-gray-600 uppercase font-black ml-1 italic">FF UID</label><input type="text" value={fuid} onChange={e=>setFuid(e.target.value)} className="w-full bg-black border border-[#222] p-3 rounded-xl text-[10px] font-bold text-white outline-none focus:border-gold" /></div>
-                      </div>
-                      {m.mode.includes('SQUAD') && (
-                        <div className="grid grid-cols-2 gap-2">
-                           {sq.map((s,i)=><input key={i} placeholder={`Squad Player ${i+1}`} className="bg-black border border-[#222] p-2 rounded text-[10px] font-bold text-white outline-none" onChange={e=>{const n=[...sq]; n[i]=e.target.value; setSq(n);}} />)}
-                        </div>
-                      )}
-                      <input type="text" id="master_final_utr" placeholder="12 Digit Transaction UTR" className="w-full bg-[#050505] border border-gold/40 p-4 rounded-2xl text-sm font-black focus:border-gold outline-none text-white text-center shadow-inner font-mono" />
-                   </div>
-                   <button onClick={()=>join(document.getElementById('master_final_utr').value)} disabled={load} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic">{load?'Authorizing...':'SEND JOIN REQUEST ✅'}</button>
-                   <button onClick={()=>setModal(false)} className="w-full text-[10px] text-gray-600 font-black uppercase text-center tracking-widest italic opacity-50">Back</button>
-                </div>
-              </div>}
+        <div id="view-profile" class="view hidden">
+            <div class="circular-logo">APEX</div>
+            <h2 style="text-align: center;">Player Profile</h2>
+            <div class="card" style="margin-top: 20px;">
+                <p><strong>IGN:</strong> <span id="prof-ign">KillerX</span></p>
+                <p><strong>Player ID:</strong> <span id="prof-pid">APX-00192</span></p>
+                <p><strong>UID:</strong> <span id="prof-uid">1234567890</span></p>
             </div>
-          );
-        }
+            <button style="background: var(--danger);" onclick="logout()">Logout</button>
+        </div>
 
-        function History({ matches, regs, user }) {
-          const myRegs = regs.filter(r => r.mobile === user.mobile);
-          return (
-            <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-700">
-              <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// MISSION LOG</p><h2 className="text-4xl font-black uppercase italic tracking-tighter leading-none font-black italic">BATTLE RECORDS</h2></div>
-              <div className="space-y-4">
-                 {myRegs.map(r => (
-                   <div key={r.id} className="mission-log rounded-2xl p-5 shadow-xl">
-                      <div className="flex justify-between items-start mb-4">
-                         <div><p className="text-[8px] text-gray-600 font-black uppercase mb-0.5 tracking-widest italic">{r.mode}</p><h4 className="text-2xl font-black italic tracking-tighter leading-none">{r.label}</h4></div>
-                         <div className={`px-3 py-1 rounded text-[8px] font-black uppercase border ${r.status==='approved'?'bg-green-600/10 text-green-500 border-green-600/20':'bg-gold/10 text-gold border-gold/20 animate-pulse'}`}>{r.status==='approved'?'Verified':'Reviewing'}</div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-y-4 pt-2 border-t border-white/5">
-                         <div><p className="text-[8px] text-gray-600 font-bold uppercase leading-none mb-1 tracking-widest italic">IGN Name</p><p className="text-sm font-black text-white italic truncate uppercase">{r.ign}</p></div>
-                         <div><p className="text-[8px] text-gray-600 font-bold uppercase leading-none mb-1 tracking-widest italic">Game UID</p><p className="text-sm font-black text-white font-mono uppercase">{r.uid}</p></div>
-                      </div>
-                   </div>
-                 ))}
-                 {myRegs.length === 0 && <p className="py-20 text-center opacity-30 font-black italic uppercase text-xs">No Battle Records detected</p>}
-              </div>
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('all')">All Tourneys</div>
+            <div class="nav-item" onclick="switchTab('my')">My Tourneys</div>
+            <div class="nav-item" onclick="switchTab('rules')">Rules</div>
+            <div class="nav-item" onclick="switchTab('profile')">Profile</div>
+        </div>
+    </div>
+
+    <div id="admin-section" class="container hidden">
+        <h2>Admin Control Panel</h2>
+        <div class="card">
+            <h3>Create Tournament</h3>
+            <input type="text" placeholder="Tournament Name">
+            <input type="number" placeholder="Entry Fee">
+            <button style="background: var(--warning);">Create (+24h Auto-Expire)</button>
+        </div>
+        <div class="card">
+            <h3>Pending Approvals</h3>
+            <p><strong>KillerX</strong> (Solo) - UTR: 8932749</p>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button style="background: #27ae60;">Approve</button>
+                <button style="background: var(--danger);">Reject</button>
             </div>
-          );
+        </div>
+        <button onclick="logout()">Exit Admin Panel</button>
+    </div>
+
+    <script>
+        // UI Navigation Logic
+        function toggleAuth() {
+            document.getElementById('login-box').classList.toggle('hidden');
+            document.getElementById('register-box').classList.toggle('hidden');
         }
 
-        function RewardsView({ user, players, db }) {
-          const p = players.find(x => x.mobile === user.mobile);
-          const streak = p?.streak || [];
-          const today = new Date().toDateString();
-          const canMark = p?.lastLogin !== today;
-          const markAttendance = async () => {
-             if(!canMark) return alert("Already marked today!");
-             const ref = db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('users').doc(p.id);
-             await ref.update({ lastLogin: today, streak: [...streak, today] });
-             alert("Attendance Signed!");
-          };
-          return (
-            <div className="space-y-10 animate-in zoom-in-95 text-center py-10">
-               <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none text-white underline decoration-gold decoration-4 underline-offset-8">ELITE STREAK</h2>
-               <div className="grid grid-cols-4 gap-4 px-2">
-                 {[1,2,3,4,5,6,7].map(d => (
-                   <div key={d} className={`aspect-square rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${streak.length >= d ? 'bg-gold border-gold text-black shadow-lg shadow-gold/30' : 'bg-[#0a0a0a] border-[#1a1a1a] text-gray-700'}`}><p className="font-black text-xl italic">{d}</p></div>
-                 ))}
-               </div>
-               <button onClick={markAttendance} disabled={!canMark} className={`w-full py-6 rounded-[2rem] font-black uppercase italic shadow-2xl transition-all ${canMark ? 'btn-gold shadow-gold/20' : 'bg-[#111] text-gray-700 cursor-not-allowed'}`}>{canMark ? 'Sign Attendance' : 'Logged for Today ✅'}</button>
-            </div>
-          );
+        function switchTab(tab) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            event.target.classList.add('active');
         }
 
-        function Rules() {
-          return (
-            <div className="space-y-6">
-              <div className="bg-red-600/10 border border-red-900/30 p-10 rounded-[3rem] text-center shadow-xl relative overflow-hidden"><h2 className="text-3xl font-black italic uppercase text-red-500 tracking-tighter leading-none text-white font-black italic">Arena Protocols</h2></div>
-              <div className="bg-[#0a0a0a] p-8 rounded-[2.5rem] border border-[#1a1a1a] space-y-6 text-[11px] font-bold text-gray-400 italic leading-relaxed shadow-inner">
-                <p>1. <span className="text-gold uppercase font-black underline underline-offset-4">Solo Integrity:</span> Teaming is strictly forbidden. Instant Device ID Ban.</p>
-                <p>2. <span className="text-gold uppercase font-black underline underline-offset-4">Anti-Cheat:</span> Panels or scripts result in Permanent ID Blacklist.</p>
-                <p>3. <span className="text-gold uppercase font-black underline underline-offset-4">Refunds:</span> Provided only if system match fails to initiate.</p>
-              </div>
-            </div>
-          );
+        // Mock Auth Logic
+        function register() {
+            // Generate mock Player ID
+            const pid = "APX-" + Math.floor(Math.random() * 90000 + 10000);
+            const ign = document.getElementById('reg-ign').value || "NewPlayer";
+            const uid = document.getElementById('reg-uid').value || "0000000";
+            
+            // Populate profile
+            document.getElementById('prof-ign').innerText = ign;
+            document.getElementById('prof-pid').innerText = pid;
+            document.getElementById('prof-uid').innerText = uid;
+
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
         }
 
-        function AdminPanel({ matches, regs, players, db }) {
-          const [atab, setAtab] = useState('match');
-          const [am, setAm] = useState({ label: '6:00 PM', hour: 18, fee: 40, prize: 200, slots: 48, mode: 'SOLO CS' });
-          const pending = regs.filter(r => r.status === 'pending');
-          return (
-            <div className="space-y-6 pb-20 animate-in fade-in">
-              <div className="grid grid-cols-3 gap-2 bg-[#0a0a0a] p-1 rounded-xl border border-[#1a1a1a]">
-                <button onClick={()=>setAtab('match')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${atab==='match'?'bg-gold text-black':'text-gray-600'}`}>Setup</button>
-                <button onClick={()=>setAtab('reg')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${atab==='reg'?'bg-green-600 text-white':'text-gray-600'}`}>Verify ({pending.length})</button>
-                <button onClick={()=>setAtab('players')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${atab==='players'?'bg-blue-600 text-white':'text-gray-600'}`}>Hunters</button>
-              </div>
+        function login() { register(); } // Same logic for prototype
 
-              {atab === 'match' && (
-                <div className="space-y-5">
-                   <div className="bg-[#0f0f0f] p-6 rounded-3xl border border-[#1a1a1a] space-y-4 shadow-2xl border-t-2 border-t-blue-900">
-                      <h3 className="text-[10px] font-black text-blue-500 uppercase italic">Deploy Battlefield</h3>
-                      <div className="grid grid-cols-2 gap-3">
-                         <select onChange={e=>setAm({...am, mode:e.target.value})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-black uppercase text-white shadow-inner"><option value="SOLO CS">Solo CS</option><option value="SQUAD CS">Squad CS</option></select>
-                         <input type="number" placeholder="Slots" onChange={e=>setAm({...am, slots:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                         <input type="number" placeholder="Hr(24h)" onChange={e=>setAm({...am, hour:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                         <input type="text" placeholder="Label" onChange={e=>setAm({...am, label:e.target.value})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                         <input type="number" placeholder="Fee" onChange={e=>setAm({...am, fee:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                         <input type="number" placeholder="Prize" onChange={e=>setAm({...am, prize:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                      </div>
-                      <button onClick={async ()=>{
-                         const mPath = db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('matches');
-                         await mPath.add({ ...am, roomId:'', roomPass:'' });
-                         alert("Battle Published!");
-                      }} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic font-black italic border-b-4 border-b-yellow-800">Publish Arena Config</button>
-                   </div>
-                   {matches.map(t => (
-                      <div key={t.id} className="bg-[#0d0d0d] p-4 rounded-2xl border border-[#1a1a1a] space-y-3 shadow-xl">
-                         <div className="flex justify-between items-center text-[10px] font-black uppercase italic tracking-widest"><span>{t.label} {t.mode}</span><button onClick={()=>db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('matches').doc(t.id).delete()}><i data-lucide="trash-2" className="w-4 h-4 text-red-600"></i></button></div>
-                         <div className="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Room ID" className="bg-black border border-[#222] p-2.5 rounded-lg text-xs font-mono font-black text-gold text-center outline-none" onBlur={e=>db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('matches').doc(t.id).update({roomId:e.target.value})} defaultValue={t.roomId} />
-                            <input type="text" placeholder="Pass" className="bg-black border border-[#222] p-2.5 rounded-lg text-xs font-mono font-black text-gold text-center outline-none" onBlur={e=>db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('matches').doc(t.id).update({roomPass:e.target.value})} defaultValue={t.roomPass} />
-                         </div>
-                      </div>
-                   ))}
-                </div>
-              )}
-
-              {atab === 'reg' && (
-                <div className="space-y-4">
-                  {pending.map(r => (
-                    <div key={r.id} className="bg-[#0d0d0d] border-l-4 border-gold p-6 rounded-2xl space-y-4 shadow-2xl animate-in zoom-in-95">
-                      <div className="flex justify-between items-start">
-                         <div><h4 className="text-xl font-black italic uppercase leading-none text-white tracking-tighter italic font-black">{r.ign}</h4><p className="text-[10px] text-gray-600 font-bold mt-1 tracking-widest uppercase italic leading-none font-black italic">M: {r.mobile} | UID: {r.uid}</p></div>
-                         <p className="text-[10px] font-black text-gold uppercase italic">{r.label}</p>
-                      </div>
-                      <div className="bg-black p-4 rounded-xl border border-[#222] text-center text-sm font-mono text-gold font-black select-all tracking-widest shadow-inner italic font-black">UTR: {r.utr}</div>
-                      <div className="flex gap-4">
-                        <button onClick={()=>db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('registrations').doc(r.id).update({status:'approved'})} className="flex-1 bg-green-600 text-white py-4 rounded-xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all font-black italic">Approve ✅</button>
-                        <button onClick={()=>db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('registrations').doc(r.id).delete()} className="flex-1 bg-gray-900 text-gray-600 py-4 rounded-xl text-[10px] font-black uppercase hover:text-red-500 transition-all font-black italic">Reject ❌</button>
-                      </div>
-                    </div>
-                  ))}
-                  {pending.length === 0 && <div className="py-20 text-center opacity-30 italic font-black uppercase text-xs">Radar Clear</div>}
-                </div>
-              )}
-
-              {atab === 'players' && (
-                <div className="space-y-4">
-                   <h3 className="text-[11px] font-black text-blue-500 uppercase italic px-2 tracking-widest border-b border-blue-900 pb-2 italic font-black underline decoration-blue-900 decoration-2 underline-offset-8">Master Database</h3>
-                   {players.map(p => (
-                     <div key={p.id} className="bg-[#0d0d0d] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl relative group">
-                        <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-4 mb-4 font-black italic uppercase tracking-tighter"><p className="text-xl text-white">{p.ign}</p><span className="text-[8px] bg-white/5 px-2 py-0.5 rounded text-gray-600">Member</span></div>
-                        <div className="grid grid-cols-2 gap-y-5 text-[11px] font-black italic uppercase tracking-tighter leading-none italic font-black">
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2 font-black italic opacity-50">Mobile Number</p><p className="text-gold font-mono text-sm tracking-tighter">{p.mobile}</p></div>
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2 font-black italic opacity-50">Security Pin</p><p className="text-gold font-mono text-sm tracking-tighter">{p.pw}</p></div>
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2 font-black italic opacity-50">Player Global UID</p><p className="text-white font-mono text-sm tracking-tighter">{p.uid}</p></div>
-                           <button onClick={async () => { if(confirm("Confirm user wipe?")) await db.collection('artifacts').doc(masterKey).collection('public').doc('data').collection('users').doc(p.id).delete(); }} className="text-[10px] text-red-600/40 font-black uppercase self-end text-right hover:text-red-500 transition-all font-black italic underline decoration-red-900">Remove 🗑️</button>
-                        </div>
-                     </div>
-                   ))}
-                </div>
-              )}
-            </div>
-          );
+        function logout() {
+            document.getElementById('dashboard-section').classList.add('hidden');
+            document.getElementById('admin-section').classList.add('hidden');
+            document.getElementById('auth-section').classList.remove('hidden');
         }
 
-        function AuthScreen({ onAuth, players, ready, mode, setMode, db }) {
-          const [mob, setMob] = useState('');
-          const [pin, setPin] = useState('');
-          const [fign, setFign] = useState('');
-          const [fuid, setFuid] = useState('');
-          const [err, setErr] = useState('');
-          const [load, setLoad] = useState(false);
-
-          const submit = (e) => {
-             if(e) e.preventDefault();
-             if(!ready) return alert("System connecting... wait 2s");
-             if(!mob || !pin) return alert("Fields required!");
-             setLoad(true); setErr('');
-
-             if(mode === 'register') {
-                if(!fign || !fuid) { alert("Details missing!"); setLoad(false); return; }
-                const ex = players.find(u => u.mobile === mob);
-                if(ex) { setErr('Number already in database! Try Login.'); setLoad(false); }
-                else { onAuth({ mobile: mob, pw: pin, ign: fign, uid: fuid }, true); }
-             } else {
-                if(mob === 'admin' && pin === 'admin') onAuth({mobile:'admin', ign:'Master Admin', isAdmin:true}, false);
-                else {
-                   const u = players.find(x => x.mobile === mob && x.pw === pin);
-                   if(u) onAuth(u, false); else { setErr('Access Denied: Invalid Credentials.'); setLoad(false); }
-                }
-             }
-          };
-
-          return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-[#050505] font-sans">
-              <div className="w-full max-w-sm text-center space-y-10 animate-in fade-in duration-700">
-                <div className="space-y-4"><div className="flex items-center justify-center gap-3"><div className="w-12 h-12 bg-gold rounded-2xl flex items-center justify-center text-black shadow-xl"><i data-lucide="target" className="w-8 h-8"></i></div><div><h1 className="text-4xl font-black italic text-white leading-none uppercase tracking-tighter italic font-black">APEX HUB</h1><p className="text-[10px] text-gold font-bold uppercase tracking-[0.3em] mt-1 italic font-black leading-none">Official Sultanpur Arena</p></div></div></div>
-                <div className="bg-[#111] p-10 rounded-[3rem] border border-[#1a1a1a] shadow-2xl space-y-8 relative overflow-hidden group">
-                  <div className="flex bg-[#050505] p-1 rounded-2xl border border-[#1a1a1a]">
-                    <button onClick={()=>setMode('login')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${mode==='login'?'bg-gold text-black shadow-lg shadow-gold/20':'text-gray-500'}`}>Login</button>
-                    <button onClick={()=>setMode('register')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${mode==='register'?'bg-gold text-black shadow-lg shadow-gold/20':'text-gray-500'}`}>Register</button>
-                  </div>
-                  <form className="space-y-5" onSubmit={submit}>
-                    <input type="text" placeholder="Mobile / Number" value={mob} onChange={e=>setMob(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none text-white tracking-widest uppercase shadow-inner" />
-                    <input type="password" placeholder="Passcode / Pin" value={pin} onChange={e=>setPin(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none text-white tracking-widest uppercase shadow-inner" />
-                    {mode === 'register' && (
-                       <div className="space-y-5 animate-in slide-in-from-top-4">
-                          <input type="text" placeholder="Free Fire Name (IGN)" value={fign} onChange={e=>setFign(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none text-white tracking-widest uppercase shadow-inner" />
-                          <input type="number" placeholder="Free Fire UID (ID)" value={fuid} onChange={e=>setFuid(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none text-white tracking-widest uppercase shadow-inner" />
-                       </div>
-                    )}
-                    {err && <div className="bg-red-600/10 border border-red-600/30 p-4 rounded-xl text-[10px] font-black text-red-500 uppercase italic tracking-widest leading-none text-center italic">{err}</div>}
-                    <button type="submit" disabled={load || !ready} className="w-full btn-gold py-6 rounded-2xl text-sm uppercase shadow-xl border-b-4 border-yellow-700 active:translate-y-1 transition-all italic font-black tracking-widest">{load?'AUTHORIZING...':(mode==='login'?'ENGAGE ARENA':'CREATE PROFILE')}</button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          );
+        // Mock Admin Logic
+        function showAdminLogin() {
+            const pass = prompt("Enter Admin Password (type 'admin' for demo):");
+            if(pass === 'admin') {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('admin-section').classList.remove('hidden');
+            }
         }
 
-        function IdentitySetup({ user, onDone }) {
-           // Not needed anymore since we do it during registration
-           useEffect(() => { onDone(user); }, []);
-           return null;
+        // Mock Join Logic
+        function openJoinModal() {
+            const format = prompt("Type 'Solo' or 'Squad':");
+            const utr = prompt("Enter UTR / Transaction ID for Entry Fee:");
+            if(format && utr) {
+                alert("Request submitted! Waiting for Admin Approval.");
+                switchTab('my'); // Auto redirect to My Tournaments
+            }
         }
-
-        const container = document.getElementById('root');
-        const root = createRoot(container);
-        root.render(<App />);
     </script>
 </body>
-</html>
-
-```
+                </html>
+    
