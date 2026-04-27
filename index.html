@@ -1,17 +1,22 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex Hub - Official Arena</title>
-    <!-- CSS & Scripts -->
+    <title>Apex Hub - Master Control</title>
+    
+    <!-- External Assets -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    
+
+    <!-- Firebase Compat (Sabse Stable) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; margin: 0; padding: 0; overflow-x: hidden; }
@@ -19,32 +24,27 @@
         .bg-gold { background-color: #facc15; }
         .text-gold { color: #facc15; }
         .btn-gold { background-color: #facc15; color: #000; font-weight: 900; border-bottom: 4px solid #a16207; }
-        .btn-gold:active { transform: translateY(2px); border-bottom-width: 2px; }
-        .slot-fill { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
-        .mission-card { background: #0d0d0d; border-left: 4px solid #facc15; }
-        .nav-item { transition: all 0.3s; }
-        .nav-active { color: #facc15; transform: scale(1.1); }
+        .btn-gold:active { transform: translateY(2px); border-bottom-width: 2px; opacity: 0.9; }
+        .slot-fill { transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-dark { background: #0d0d0d; border: 1px solid #1a1a1a; }
+        .mission-log { border-left: 4px solid #facc15; background: #0a0a0a; }
+        @keyframes pulse-gold { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse-gold { animation: pulse-gold 2s infinite; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="min-h-screen flex flex-col items-center justify-center bg-[#050505]">
+            <div class="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p class="text-gold font-black uppercase tracking-[0.3em]">Apex Engine Starting...</p>
+        </div>
+    </div>
 
     <script type="text/babel">
-        // Firebase Compatibility Scripts
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
         const { createRoot } = ReactDOM;
 
-        // Firebase Imports via CDN (Global)
-        // Note: Using standard script structure to avoid white screen on mobile
-    </script>
-
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-    <script type="text/babel">
-        // --- FIREBASE CONFIG ---
+        // --- FIREBASE INITIALIZATION ---
         const firebaseConfig = {
           apiKey: "AIzaSyDzBQO4rlXQV5jTZzLopFp_WSvgSA_r5PQ",
           authDomain: "apex-hub-1eee0.firebaseapp.com",
@@ -57,102 +57,109 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const masterPath = "APEX_MASTER_ULTIMATE_V100";
+
+        // RASTA LOCK (Strict Path for Data Persistence)
+        const MASTER_APP_ID = "APEX_SULTANPUR_V500"; 
 
         function App() {
-          const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('apex_auth_v100') || 'null'));
-          const [setup, setSetup] = useState(false);
+          const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('apex_session_v500') || 'null'));
+          const [isSetup, setIsSetup] = useState(false);
           const [view, setView] = useState('arena');
           const [mode, setMode] = useState('SOLO CS');
           
           const [matches, setMatches] = useState([]);
           const [regs, setRegs] = useState([]);
-          const [allUsers, setAllUsers] = useState([]);
-          const [isReady, setIsReady] = useState(false);
+          const [players, setPlayers] = useState([]);
+          const [ready, setReady] = useState(false);
 
           useEffect(() => {
-            auth.signInAnonymously().then(() => setIsReady(true));
+            // Rule 3: Auth First
+            auth.signInAnonymously().then(() => {
+                setReady(true);
+                
+                // Rule 1: Strict Sync Paths
+                const mRef = db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('matches');
+                const rRef = db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('registrations');
+                const uRef = db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('users');
 
-            // PATH RULE 1: All data in public data for strict sync
-            const mRef = db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('matches');
-            const rRef = db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('registrations');
-            const uRef = db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('users');
-
-            const unsubM = mRef.onSnapshot(s => setMatches(s.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>a.hour - b.hour)));
-            const unsubR = rRef.onSnapshot(s => setRegs(s.docs.map(d=>({id:d.id, ...d.data()}))));
-            const unsubU = uRef.onSnapshot(s => setAllUsers(s.docs.map(d=>({id:d.id, ...d.data()}))));
-
-            return () => { unsubM(); unsubR(); unsubU(); };
+                // Live Listeners (Refreshes instantly on change)
+                mRef.onSnapshot(s => setMatches(s.docs.map(d=>({id: d.id, ...d.data()})).sort((a,b)=>a.hour - b.hour)));
+                rRef.onSnapshot(s => setRegs(s.docs.map(d=>({id: d.id, ...d.data()}))));
+                uRef.onSnapshot(s => setPlayers(s.docs.map(d=>({id: d.id, ...d.data()}))));
+            });
           }, []);
 
-          const handleAuth = (u, fresh) => {
-            if(fresh) { setUser(u); setSetup(true); }
-            else { localStorage.setItem('apex_auth_v100', JSON.stringify(u)); setUser(u); }
+          useEffect(() => { lucide.createIcons(); }, [view, mode, user, isSetup]);
+
+          const handleAuth = (u, isNew) => {
+            if(isNew) { setUser(u); setIsSetup(true); }
+            else { localStorage.setItem('apex_session_v500', JSON.stringify(u)); setUser(u); }
           };
 
-          const handleLogout = () => { localStorage.removeItem('apex_auth_v100'); setUser(null); };
+          const handleLogout = () => { localStorage.removeItem('apex_session_v500'); setUser(null); };
 
-          if (!user) return <LoginScreen onAuth={handleAuth} players={allUsers} ready={isReady} />;
+          if (!user) return <LoginScreen onAuth={handleAuth} players={players} ready={ready} />;
           
-          if (setup) return <SetupProfile user={user} onDone={(full) => {
-            db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('users').add({ ...full, isAdmin: false, streak: [] });
-            localStorage.setItem('apex_auth_v100', JSON.stringify(full));
+          if (isSetup) return <SetupProfile user={user} onDone={(full) => {
+            db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('users').add({ ...full, isAdmin: false, matches: 0, streak: [] });
+            localStorage.setItem('apex_session_v500', JSON.stringify(full));
             setUser(full);
-            setSetup(false);
+            setIsSetup(false);
           }} />;
 
           return (
             <div className="min-h-screen flex flex-col max-w-md mx-auto bg-[#050505] border-x border-[#111] shadow-2xl relative">
+              {/* Header */}
               <header className="p-4 flex justify-between items-center bg-[#050505] border-b border-[#111] sticky top-0 z-50">
                 <div className="flex items-center gap-2">
-                  <div className="bg-gold p-1.5 rounded text-black"><i data-lucide="target" style={{width: 20, height: 20}}></i></div>
-                  <h1 className="text-xl font-black italic tracking-tighter uppercase">APEX HUB</h1>
+                  <div className="bg-gold p-1.5 rounded text-black"><i data-lucide="target" style={{width: 18, height: 18}}></i></div>
+                  <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">APEX HUB</h1>
                 </div>
-                <button onClick={handleLogout} className="p-2 bg-[#111] rounded text-red-500 shadow-inner"><i data-lucide="log-out" style={{width: 16, height: 16}}></i></button>
+                <button onClick={handleLogout} className="p-2 bg-[#111] rounded text-red-500 shadow-inner active:scale-90 transition-all"><i data-lucide="log-out" style={{width: 16, height: 16}}></i></button>
               </header>
 
               <nav className="flex bg-[#050505] border-b border-[#111] sticky top-[61px] z-40">
                 <button onClick={()=>setView('arena')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest ${view==='arena'?'text-gold border-b-2 border-gold':'text-gray-500'}`}>Arena</button>
-                <button onClick={()=>setView('history')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest ${view==='history'?'text-gold border-b-2 border-gold':'text-gray-500'}`}>Mission Log</button>
+                <button onClick={()=>setView('history')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest ${view==='history'?'text-gold border-b-2 border-gold':'text-gray-500'}`}>Missions</button>
               </nav>
 
               <main className="flex-1 p-5 pb-24 overflow-y-auto scrollbar-hide">
-                {view === 'arena' && <ArenaView matches={matches} regs={regs} tab={mode} setTab={setMode} user={user} db={db} />}
+                {view === 'arena' && <ArenaView list={matches} regs={regs} tab={mode} setTab={setMode} user={user} db={db} />}
                 {view === 'history' && <HistoryView list={matches} regs={regs} user={user} />}
-                {view === 'rewards' && <RewardsView user={user} players={allUsers} db={db} />}
+                {view === 'rewards' && <RewardsView user={user} players={players} db={db} />}
                 {view === 'rules' && <RulesView />}
-                {view === 'admin' && <AdminView matches={matches} regs={regs} players={allUsers} db={db} />}
+                {view === 'admin' && <AdminPanel matches={matches} regs={regs} players={players} db={db} />}
               </main>
 
+              {/* Bottom Navigation Bar */}
               <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#050505] border-t border-[#111] flex justify-around p-3 z-50 backdrop-blur-md">
-                <BottomIcon active={view==='arena'} icon="gamepad-2" onClick={()=>setView('arena')} />
-                <BottomIcon active={view==='history'} icon="trophy" onClick={()=>setView('history')} />
-                <BottomIcon active={view==='rewards'} icon="calendar" onClick={()=>setView('rewards')} />
-                <BottomIcon active={view==='rules'} icon="info" onClick={()=>setView('rules')} />
-                {user.isAdmin && <BottomIcon active={view==='admin'} icon="settings" onClick={()=>setView('admin')} />}
+                <NavIcon active={view==='arena'} icon="gamepad-2" onClick={()=>setView('arena')} />
+                <NavIcon active={view==='history'} icon="trophy" onClick={()=>setView('history')} />
+                <NavIcon active={view==='rewards'} icon="calendar" onClick={()=>setView('rewards')} />
+                <NavIcon active={view==='rules'} icon="info" onClick={()=>setView('rules')} />
+                {user.isAdmin && <NavIcon active={view==='admin'} icon="settings" onClick={()=>setView('admin')} />}
               </nav>
             </div>
           );
         }
 
-        const BottomIcon = ({ active, icon, onClick }) => {
-            useEffect(() => { lucide.createIcons(); }, [active]);
-            return <button onClick={onClick} className={`p-2 transition-all ${active ? 'text-gold scale-125' : 'text-gray-600'}`}><i data-lucide={icon}></i></button>;
-        };
+        const NavIcon = ({ active, icon, onClick }) => (
+          <button onClick={onClick} className={`p-2 transition-all ${active ? 'text-gold scale-125' : 'text-gray-600'}`}><i data-lucide={icon}></i></button>
+        );
 
-        function ArenaView({ matches, regs, tab, setTab, user, db }) {
-          const list = matches.filter(m => m.mode === tab);
+        function ArenaView({ list, regs, tab, setTab, user, db }) {
+          const filtered = list.filter(m => m.mode === tab);
           return (
-            <div className="space-y-6">
-              <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// ELITE BATTLEGROUND</p><h2 className="text-3xl font-black uppercase leading-none italic">CURRENT <span className="text-gold">DROPS</span></h2></div>
-              <div className="flex gap-2 pb-1 overflow-x-auto scrollbar-hide">
+            <div className="space-y-6 animate-in fade-in duration-500">
+              <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// MISSION CONTROL</p><h2 className="text-3xl font-black uppercase leading-none italic">AVAILABLE <span className="text-gold">DROPS</span></h2></div>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
                 {['SOLO CS', 'SQUAD CS'].map(t => (
-                  <button key={t} onClick={()=>setTab(t)} className={`px-6 py-2 rounded text-[10px] font-black border tracking-tighter ${tab===t?'bg-gold text-black border-gold shadow-lg':'bg-[#111] text-gray-500 border-[#222]'}`}>{t}</button>
+                  <button key={t} onClick={()=>setTab(t)} className={`px-6 py-2 rounded text-[10px] font-black border tracking-tighter ${tab===t?'bg-gold text-black border-gold shadow-lg':'bg-[#111] text-gray-400 border-[#222]'}`}>{t}</button>
                 ))}
               </div>
               <div className="space-y-5">
-                {list.map(m => <MatchCard key={m.id} m={m} user={user} regs={regs} db={db} />)}
-                {list.length === 0 && <div className="py-20 text-center text-gray-700 font-black uppercase text-xs">No match deployed in {tab}</div>}
+                {filtered.map(m => <MatchCard key={m.id} m={m} user={user} regs={regs} db={db} />)}
+                {filtered.length === 0 && <div className="py-20 text-center opacity-30 italic font-bold uppercase text-[10px]">Awaiting deployment by Admin...</div>}
               </div>
             </div>
           );
@@ -166,70 +173,70 @@
           const [sq, setSq] = useState(['', '', '', '']);
 
           const myReg = regs.find(r => r.matchId === m.id && r.mobile === user.mobile);
-          const approved = regs.filter(r => r.matchId === m.id && r.status === 'approved').length;
-          const progress = Math.min((approved / m.slots) * 100, 100);
+          const approvedCount = regs.filter(r => r.matchId === m.id && r.status === 'approved').length;
+          const progress = Math.min((approvedCount / m.slots) * 100, 100);
           const isLive = new Date().getHours() >= m.hour;
 
           const join = async (utr) => {
-            if(!utr) return alert("UTR Needed!");
+            if(!utr) return alert("UTR/Reference Number Required!");
             setLoad(true);
             try {
-              await db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('registrations').add({
+              await db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('registrations').add({
                 matchId: m.id, mobile: user.mobile, ign, uid, utr,
                 status: 'pending', time: Date.now(), label: m.label, mode: m.mode,
                 squad: m.mode === 'SQUAD CS' ? sq : null
               });
               setModal(false);
-            } catch(e) { alert("Error!"); }
+            } catch(e) { alert("Submission failed!"); }
             setLoad(false);
           };
 
           return (
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl overflow-hidden shadow-xl mb-4">
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl overflow-hidden shadow-xl mb-4 transition-all hover:border-gold/20">
               <div className="p-5 flex justify-between items-center bg-[#0d0d0d] border-b border-[#111]">
-                <div><h3 className="text-xl font-black italic uppercase leading-none">{m.label}</h3><p className="text-[9px] text-gray-600 font-bold uppercase mt-1 tracking-widest">{m.mode}</p></div>
+                <div><h3 className="text-xl font-black italic uppercase leading-none">{m.label}</h3><p className="text-[9px] text-gray-600 font-bold uppercase mt-1 italic tracking-widest">{m.mode}</p></div>
                 {myReg ? (
-                   myReg.status === 'approved' ? <span className="bg-green-600 text-white text-[9px] font-black px-3 py-1 rounded-full">Joined ✅</span> : 
-                   <span className="bg-[#111] text-gray-400 text-[9px] font-black px-3 py-1 rounded-full border border-[#222] animate-pulse">PENDING</span>
-                ) : (approved >= m.slots ? <span className="bg-red-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase">FULL</span> : <span className="text-gold text-[9px] font-black uppercase tracking-widest">OPEN</span>)}
+                   myReg.status === 'approved' ? <span className="bg-green-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">Joined ✅</span> : 
+                   <span className="bg-[#111] text-gray-400 text-[9px] font-black px-3 py-1 rounded-full border border-[#222] animate-pulse italic uppercase">Pending</span>
+                ) : (approvedCount >= m.slots ? <span className="bg-red-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase">Full</span> : <span className="text-gold text-[9px] font-black uppercase tracking-widest italic animate-pulse-gold">Open</span>)}
               </div>
 
-              <div className="p-5 space-y-5">
+              <div className="p-5 space-y-4">
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-[9px] font-black uppercase text-gray-500 tracking-widest"><span>Battle Slots</span><span>{approved} / {m.slots}</span></div>
-                  <div className="w-full h-1.5 bg-[#111] rounded-full border border-[#222] p-0.5"><div className="h-full bg-gold rounded-full slot-fill" style={{width:`${progress}%`}}></div></div>
+                  <div className="flex justify-between text-[9px] font-black uppercase text-gray-500 tracking-widest"><span>Slots Filled</span><span className={approvedCount >= m.slots ? 'text-red-500' : 'text-gold'}>{approvedCount} / {m.slots}</span></div>
+                  <div className="w-full h-1.5 bg-[#111] rounded-full border border-[#222] p-0.5"><div className="h-full bg-gold rounded-full slot-fill shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{width:`${progress}%`}}></div></div>
                 </div>
 
-                {!myReg ? <button onClick={()=>setModal(true)} disabled={approved >= m.slots} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic">Join Tournament</button> :
-                 myReg.status === 'pending' ? <button className="w-full bg-[#0a0a0a] border border-[#1a1a1a] text-gray-600 py-4 rounded-xl font-bold uppercase text-[10px] italic">Awaiting Admin...</button> :
+                {!myReg ? <button onClick={()=>setModal(true)} disabled={approvedCount >= m.slots} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest font-black italic">Enroll in Battle</button> :
+                 myReg.status === 'pending' ? <button className="w-full bg-[#0a0a0a] border border-[#1a1a1a] text-gray-600 py-4 rounded-xl font-bold uppercase text-[10px] italic">Awaiting Verification...</button> :
                  <div className="bg-black p-4 rounded-xl border border-green-500/20 text-center space-y-2">
-                    {isLive ? <><div className="flex justify-between text-xs px-2"><span className="text-gray-500 font-bold">Room ID:</span><span className="text-green-500 font-mono font-black select-all">{m.roomId || 'WAIT'}</span></div><div className="flex justify-between text-xs px-2"><span className="text-gray-500 font-bold">Pass:</span><span className="text-green-500 font-mono font-black select-all">{m.roomPass || 'WAIT'}</span></div></> : <p className="text-[10px] text-gray-500 font-bold italic uppercase">Room Details at {m.label}</p>}
+                    {isLive ? <><div className="flex justify-between text-xs px-2"><span className="text-gray-500 font-bold uppercase">ID:</span><span className="text-green-500 font-mono font-black select-all text-sm">{m.roomId || 'WAIT'}</span></div><div className="flex justify-between text-xs px-2"><span className="text-gray-500 font-bold uppercase">Pass:</span><span className="text-green-500 font-mono font-black select-all text-sm">{m.roomPass || 'WAIT'}</span></div></> : <p className="text-[10px] text-gray-500 font-bold italic uppercase tracking-tighter">Details drop at {m.label}</p>}
                  </div>}
 
                 <div className="grid grid-cols-2 gap-4 text-center border-t border-[#111] pt-3">
-                   <div><p className="text-[8px] text-gray-600 font-bold uppercase">Prize</p><p className="text-gold font-black text-sm">₹{m.prize}</p></div>
-                   <div><p className="text-[8px] text-gray-600 font-bold uppercase">Entry</p><p className="text-gold font-black text-sm">₹{m.fee}</p></div>
+                   <div><p className="text-[8px] text-gray-600 font-bold uppercase">Prize</p><p className="text-gold font-black text-sm italic tracking-tighter leading-none mt-1 uppercase">₹{m.prize}</p></div>
+                   <div><p className="text-[8px] text-gray-600 font-bold uppercase">Entry</p><p className="text-gold font-black text-sm italic tracking-tighter leading-none mt-1 uppercase">₹{m.fee}</p></div>
                 </div>
               </div>
 
               {modal && <div className="fixed inset-0 bg-black/98 backdrop-blur-xl z-[200] flex items-center justify-center p-6 overflow-y-auto">
-                <div className="bg-[#0f0f0f] border border-white/5 w-full rounded-[2.5rem] p-8 space-y-6 my-auto shadow-2xl relative">
-                   <div className="text-center space-y-1"><h3 className="text-2xl font-black text-gold italic uppercase leading-none">Registration</h3><p className="text-[9px] text-gray-500 uppercase tracking-widest italic">Complete Payment To Proceed</p></div>
-                   <img src="./1000087879.jpg" className="w-44 h-44 mx-auto rounded-2xl border-2 border-white shadow-2xl" />
+                <div className="bg-[#0f0f0f] border border-white/5 w-full rounded-[2.5rem] p-8 space-y-6 my-auto shadow-2xl relative animate-in slide-in-from-bottom-4">
+                   <div className="text-center space-y-1"><h3 className="text-2xl font-black text-gold italic uppercase leading-none font-black italic">Arena Registration</h3><p className="text-[9px] text-gray-500 uppercase tracking-widest italic leading-none mt-1">Submit Details To Join</p></div>
+                   <img src="./1000087879.jpg" className="w-44 h-44 mx-auto rounded-2xl border-2 border-white shadow-2xl" onError={e=>e.target.src="https://placehold.co/200x200?text=Scan+QR"} />
                    
                    <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1"><label className="text-[8px] text-gray-600 font-black ml-1 uppercase">IGN</label><input type="text" value={ign} onChange={e=>setIgn(e.target.value)} className="w-full bg-black border border-[#222] p-3 rounded-xl text-[10px] font-bold text-white focus:border-gold outline-none" /></div>
-                        <div className="space-y-1"><label className="text-[8px] text-gray-600 font-black ml-1 uppercase">UID</label><input type="text" value={uid} onChange={e=>setUid(e.target.value)} className="w-full bg-black border border-[#222] p-3 rounded-xl text-[10px] font-bold text-white focus:border-gold outline-none" /></div>
+                        <div className="space-y-1"><label className="text-[8px] text-gray-500 uppercase font-black ml-1">IGN</label><input type="text" value={ign} onChange={e=>setIgn(e.target.value)} className="w-full bg-black border border-[#222] p-3 rounded-xl text-[10px] font-bold text-white outline-none focus:border-gold" /></div>
+                        <div className="space-y-1"><label className="text-[8px] text-gray-500 uppercase font-black ml-1">UID</label><input type="text" value={uid} onChange={e=>setUid(e.target.value)} className="w-full bg-black border border-[#222] p-3 rounded-xl text-[10px] font-bold text-white outline-none focus:border-gold" /></div>
                       </div>
-                      {m.mode === 'SQUAD CS' && (
+                      {m.mode.includes('SQUAD') && (
                         <div className="grid grid-cols-2 gap-2">
-                           {sq.map((s,i)=><input key={i} placeholder={`Player ${i+1}`} className="bg-black border border-[#222] p-2 rounded text-[10px] font-bold text-white" onChange={e=>{const n=[...sq]; n[i]=e.target.value; setSq(n);}} />)}
+                           {sq.map((s,i)=><input key={i} placeholder={`Player ${i+1}`} className="bg-black border border-[#222] p-2 rounded text-[10px] font-bold text-white outline-none focus:border-gold" onChange={e=>{const n=[...sq]; n[i]=e.target.value; setSq(n);}} />)}
                         </div>
                       )}
-                      <input type="text" id="master_utr" placeholder="12 Digit Transaction UTR" className="w-full bg-[#050505] border border-gold/30 p-4 rounded-2xl text-sm font-black focus:border-gold outline-none text-white text-center shadow-inner" />
+                      <input type="text" id="master_final_utr" placeholder="12 Digit Transaction UTR" className="w-full bg-[#050505] border border-gold/30 p-4 rounded-2xl text-sm font-black focus:border-gold outline-none text-white text-center shadow-inner uppercase" />
                    </div>
-                   <button onClick={()=>join(document.getElementById('master_utr').value)} disabled={load} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic">{load?'Processing...':'Submit Proof ✅'}</button>
+                   <button onClick={()=>join(document.getElementById('master_final_utr').value)} disabled={load} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic">{load?'Authorizing...':'Send Request ✅'}</button>
                    <button onClick={()=>setModal(false)} className="w-full text-[10px] text-gray-600 font-black uppercase text-center tracking-widest italic opacity-50">Back</button>
                 </div>
               </div>}
@@ -240,21 +247,22 @@
         function HistoryView({ list, regs, user }) {
           const myRegs = regs.filter(r => r.mobile === user.mobile);
           return (
-            <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-700">
-              <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// MISSION LOG</p><h2 className="text-4xl font-black uppercase italic tracking-tighter leading-none">RECORDS</h2></div>
+            <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-700">
+              <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// MISSION LOG</p><h2 className="text-4xl font-black uppercase italic tracking-tighter leading-none italic font-black">BATTLE RECORDS</h2></div>
               <div className="space-y-4">
                  {myRegs.map(r => (
-                   <div key={r.id} className="mission-card rounded-2xl p-5 shadow-xl">
+                   <div key={r.id} className="mission-log rounded-2xl p-5 shadow-xl">
                       <div className="flex justify-between items-start mb-4">
-                         <div><p className="text-[8px] text-gray-600 font-black uppercase mb-0.5">{r.mode}</p><h4 className="text-2xl font-black italic tracking-tighter leading-none">{r.label}</h4></div>
-                         <div className={`px-3 py-1 rounded text-[8px] font-black uppercase border ${r.status==='approved'?'bg-green-600/10 text-green-500 border-green-600/20':'bg-gold/10 text-gold border-gold/20'}`}>{r.status==='approved'?'Verified ✅':'Pending Approval'}</div>
+                         <div><p className="text-[8px] text-gray-600 font-black uppercase mb-0.5 tracking-widest italic leading-none">{r.mode}</p><h4 className="text-2xl font-black italic tracking-tighter leading-none">{r.label}</h4></div>
+                         <div className={`px-3 py-1 rounded text-[8px] font-black uppercase border ${r.status==='approved'?'bg-green-600/10 text-green-500 border-green-600/20':'bg-gold/10 text-gold border-gold/20 animate-pulse'}`}>{r.status==='approved'?'Verified ✅':'In Review'}</div>
                       </div>
                       <div className="grid grid-cols-2 gap-y-4 pt-2 border-t border-white/5">
-                         <div><p className="text-[8px] text-gray-600 font-bold uppercase leading-none mb-1">IGN Name</p><p className="text-sm font-black text-white italic truncate uppercase">{r.ign}</p></div>
+                         <div><p className="text-[8px] text-gray-600 font-bold uppercase leading-none mb-1">In-Game Name</p><p className="text-sm font-black text-white italic truncate uppercase">{r.ign}</p></div>
                          <div><p className="text-[8px] text-gray-600 font-bold uppercase leading-none mb-1">Player UID</p><p className="text-sm font-black text-white font-mono uppercase">{r.uid}</p></div>
                       </div>
                    </div>
                  ))}
+                 {myRegs.length === 0 && <p className="py-20 text-center opacity-30 italic font-bold uppercase text-[10px] border border-dashed border-[#222] rounded-3xl">No records detected</p>}
               </div>
             </div>
           );
@@ -267,22 +275,19 @@
           const canClaim = p?.lastLogin !== today;
           const claim = async () => {
              if(!canClaim) return alert("Marked already!");
-             const ref = db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('users').doc(p.id);
+             const ref = db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('users').doc(p.id);
              await ref.update({ lastLogin: today, streak: [...streak, today] });
              alert("Attendance marked!");
           };
           return (
             <div className="space-y-10 animate-in zoom-in-95 text-center py-10">
-               <div className="text-center space-y-2">
-                 <h2 className="text-4xl font-black uppercase italic tracking-tighter leading-none text-white">ELITE STREAK</h2>
-                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest underline decoration-gold decoration-2 underline-offset-8">Sultanpur Elite Reward</p>
-               </div>
+               <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none text-white underline decoration-gold decoration-4 underline-offset-8">ELITE STREAK</h2>
                <div className="grid grid-cols-4 gap-4 px-2">
                  {[1,2,3,4,5,6,7].map(d => (
                    <div key={d} className={`aspect-square rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${streak.length >= d ? 'bg-gold border-gold text-black shadow-lg shadow-gold/30' : 'bg-[#0a0a0a] border-[#1a1a1a] text-gray-700'}`}><p className="font-black text-xl italic">{d}</p></div>
                  ))}
                </div>
-               <button onClick={claim} disabled={!canClaim} className={`w-full py-6 rounded-[2rem] font-black uppercase italic shadow-2xl transition-all ${canClaim ? 'btn-gold' : 'bg-[#111] text-gray-700 cursor-not-allowed'}`}>{canClaim ? 'Sign Attendance' : 'Logged In ✅'}</button>
+               <button onClick={claim} disabled={!canClaim} className={`w-full py-6 rounded-[2rem] font-black uppercase italic shadow-2xl transition-all ${canClaim ? 'btn-gold shadow-gold/20' : 'bg-[#111] text-gray-700 cursor-not-allowed'}`}>{canClaim ? 'Verify Today Presence' : 'Day Logged ✅'}</button>
             </div>
           );
         }
@@ -290,32 +295,32 @@
         function RulesView() {
           return (
             <div className="space-y-6">
-              <div className="bg-red-600/10 border border-red-900/30 p-10 rounded-[3rem] text-center shadow-xl relative overflow-hidden"><h2 className="text-3xl font-black italic uppercase text-red-500 tracking-tighter italic leading-none text-white">Arena Rules</h2></div>
+              <div className="bg-red-600/10 border border-red-900/30 p-10 rounded-[3rem] text-center shadow-xl relative overflow-hidden"><h2 className="text-3xl font-black italic uppercase text-red-500 tracking-tighter leading-none text-white font-black italic leading-none">Arena Protocols</h2></div>
               <div className="bg-[#0a0a0a] p-8 rounded-[2.5rem] border border-[#1a1a1a] space-y-6 text-[11px] font-bold text-gray-400 italic leading-relaxed shadow-inner">
-                <p>1. <span className="text-gold uppercase font-black">Integrity:</span> No teaming up allowed. Result: Hardware ID Ban.</p>
-                <p>2. <span className="text-gold uppercase font-black">Cheats:</span> Use of Panels or External Scripts = Blacklist.</p>
-                <p>3. <span className="text-gold uppercase font-black">Refunds:</span> Credits provided only for match cancellation.</p>
+                <p>1. <span className="text-gold uppercase font-black">Integrity:</span> Solo play strictly enforced. Team-ups result in Permanent Hardware ID Blacklist.</p>
+                <p>2. <span className="text-gold uppercase font-black">Cheats:</span> Use of Panels, External Scripts or Hacks = Permanent Device Termination.</p>
+                <p>3. <span className="text-gold uppercase font-black">Refunds:</span> Credits provided only for system-level match cancellation.</p>
               </div>
             </div>
           );
         }
 
-        function AdminView({ matches, regs, players, db }) {
+        function AdminPanel({ matches, regs, players, db }) {
           const [tab, setTab] = useState('match');
           const [am, setAm] = useState({ label: '6:00 PM', hour: 18, fee: 40, prize: 200, slots: 48, mode: 'SOLO CS' });
           const pending = regs.filter(r => r.status === 'pending');
           return (
             <div className="space-y-6 pb-20 animate-in fade-in">
               <div className="grid grid-cols-3 gap-2 bg-[#0a0a0a] p-1 rounded-xl border border-[#1a1a1a]">
-                <button onClick={()=>setTab('match')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${tab==='match'?'bg-gold text-black':'text-gray-600'}`}>Setup</button>
-                <button onClick={()=>setTab('reg')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${tab==='reg'?'bg-green-600 text-white':'text-gray-600'}`}>Requests ({pending.length})</button>
+                <button onClick={()=>setTab('match')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${tab==='match'?'bg-gold text-black':'text-gray-600'}`}>Arena</button>
+                <button onClick={()=>setTab('reg')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${tab==='reg'?'bg-green-600 text-white':'text-gray-600'}`}>Verify ({pending.length})</button>
                 <button onClick={()=>setTab('players')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${tab==='players'?'bg-blue-600 text-white':'text-gray-600'}`}>Database</button>
               </div>
 
               {tab === 'match' && (
                 <div className="space-y-5 animate-in slide-in-from-top-4">
                    <div className="bg-[#0f0f0f] p-6 rounded-3xl border border-[#1a1a1a] space-y-4 shadow-2xl">
-                      <h3 className="text-[10px] font-black text-gold uppercase italic">Deploy Battlefield</h3>
+                      <h3 className="text-[10px] font-black text-blue-500 uppercase italic">Deploy Battlefield</h3>
                       <div className="grid grid-cols-2 gap-3">
                          <select onChange={e=>setAm({...am, mode:e.target.value})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-black uppercase text-white"><option value="SOLO CS">Solo CS</option><option value="SQUAD CS">Squad CS</option></select>
                          <input type="number" placeholder="Total Slots" onChange={e=>setAm({...am, slots:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold" />
@@ -325,17 +330,17 @@
                          <input type="number" placeholder="Prize" onChange={e=>setAm({...am, prize:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold" />
                       </div>
                       <button onClick={async ()=>{
-                         const mRef = db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('matches');
-                         await mRef.add({ ...am, roomId:'', roomPass:'' });
+                         const col = db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('matches');
+                         await col.add({ ...am, roomId:'', roomPass:'' });
                          alert("Battle Published!");
                       }} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic font-black">Publish Arena Config</button>
                    </div>
                    {matches.map(t => (
-                      <div key={t.id} className="bg-[#0d0d0d] p-4 rounded-2xl border border-[#1a1a1a] space-y-3 shadow-xl">
-                         <div className="flex justify-between items-center text-[10px] font-black uppercase italic tracking-widest"><span>{t.label} {t.mode}</span><button onClick={()=>db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('matches').doc(t.id).delete()}><i data-lucide="trash-2" style={{width: 16, height: 16, color:'red'}}></i></button></div>
+                      <div key={t.id} className="bg-[#0d0d0d] p-4 rounded-2xl border border-[#1a1a1a] space-y-3 shadow-xl border-l-4 border-blue-900">
+                         <div className="flex justify-between items-center text-[10px] font-black uppercase italic tracking-widest"><span>{t.label} {t.mode}</span><button onClick={()=>db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('matches').doc(t.id).delete()}><i data-lucide="trash-2" style={{width: 16, height: 16, color:'red'}}></i></button></div>
                          <div className="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Room ID" className="bg-black border border-[#222] p-2.5 rounded-lg text-xs font-mono font-black text-gold text-center outline-none" onBlur={e=>db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('matches').doc(t.id).update({roomId:e.target.value})} defaultValue={t.roomId} />
-                            <input type="text" placeholder="Pass" className="bg-black border border-[#222] p-2.5 rounded-lg text-xs font-mono font-black text-gold text-center outline-none" onBlur={e=>db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('matches').doc(t.id).update({roomPass:e.target.value})} defaultValue={t.roomPass} />
+                            <input type="text" placeholder="Room ID" className="bg-black border border-[#222] p-2.5 rounded-lg text-xs font-mono font-black text-gold text-center outline-none" onBlur={e=>db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('matches').doc(t.id).update({roomId:e.target.value})} defaultValue={t.roomId} />
+                            <input type="text" placeholder="Pass" className="bg-black border border-[#222] p-2.5 rounded-lg text-xs font-mono font-black text-gold text-center outline-none" onBlur={e=>db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('matches').doc(t.id).update({roomPass:e.target.value})} defaultValue={t.roomPass} />
                          </div>
                       </div>
                    ))}
@@ -347,32 +352,32 @@
                   {pending.map(r => (
                     <div key={r.id} className="bg-[#0d0d0d] border-l-4 border-gold p-6 rounded-2xl space-y-4 shadow-2xl animate-in zoom-in-95">
                       <div className="flex justify-between items-start">
-                         <div><h4 className="text-xl font-black italic uppercase leading-none text-white">{r.ign}</h4><p className="text-[10px] text-gray-600 font-bold mt-1 tracking-widest uppercase italic">M: {r.mobile} | UID: {r.uid}</p></div>
+                         <div><h4 className="text-xl font-black italic uppercase leading-none text-white tracking-tighter italic">{r.ign}</h4><p className="text-[10px] text-gray-600 font-bold mt-1 tracking-widest uppercase italic leading-none font-black italic">M: {r.mobile} | UID: {r.uid}</p></div>
                          <p className="text-[10px] font-black text-gold uppercase italic">{r.label}</p>
                       </div>
                       {r.squad && <div className="bg-black p-3 rounded-xl border border-white/5 text-[9px] text-gray-500 font-black italic uppercase italic leading-none">Squad: {r.squad.join(', ')}</div>}
-                      <div className="bg-black p-4 rounded-xl border border-[#222] text-center text-sm font-mono text-gold font-black select-all tracking-widest uppercase">UTR: {r.utr}</div>
+                      <div className="bg-black p-4 rounded-xl border border-[#222] text-center text-sm font-mono text-gold font-black select-all tracking-widest uppercase shadow-inner italic font-black">UTR: {r.utr}</div>
                       <div className="flex gap-4">
-                        <button onClick={()=>db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('registrations').doc(r.id).update({status:'approved'})} className="flex-1 bg-green-600 text-white py-4 rounded-xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all">Approve ✅</button>
-                        <button onClick={()=>db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('registrations').doc(r.id).delete()} className="flex-1 bg-gray-900 text-gray-600 py-4 rounded-xl text-[10px] font-black uppercase hover:text-red-500 transition-all">Reject ❌</button>
+                        <button onClick={()=>db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('registrations').doc(r.id).update({status:'approved'})} className="flex-1 bg-green-600 text-white py-4 rounded-xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all tracking-widest italic font-black">Approve ✅</button>
+                        <button onClick={()=>db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('registrations').doc(r.id).delete()} className="flex-1 bg-gray-900 text-gray-600 py-4 rounded-xl text-[10px] font-black uppercase hover:text-red-500 transition-all italic tracking-widest font-black">Reject ❌</button>
                       </div>
                     </div>
                   ))}
-                  {pending.length === 0 && <div className="py-20 text-center opacity-30 uppercase font-black italic text-xs tracking-widest">Radar Clear</div>}
+                  {pending.length === 0 && <div className="py-20 text-center opacity-30 uppercase font-black italic text-xs tracking-widest border border-dashed border-[#222] rounded-[3rem]">Radar Clear</div>}
                 </div>
               )}
 
               {tab === 'players' && (
                 <div className="space-y-4">
-                   <h3 className="text-[11px] font-black text-blue-500 uppercase italic px-2 tracking-widest border-b border-blue-900 pb-2">Master Database</h3>
+                   <h3 className="text-[11px] font-black text-blue-500 uppercase italic px-2 tracking-widest border-b border-blue-900 pb-2 underline decoration-blue-900 decoration-2 underline-offset-4 font-black">Global Master Database</h3>
                    {players.map(p => (
                      <div key={p.id} className="bg-[#0d0d0d] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl relative group">
-                        <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-4 mb-4"><p className="font-black text-xl italic uppercase text-white tracking-tighter leading-none">{p.ign}</p><span className="text-[8px] bg-white/5 px-2 py-0.5 rounded text-gray-600 uppercase font-black">Elite Member</span></div>
-                        <div className="grid grid-cols-2 gap-y-5 text-[11px] font-black italic uppercase tracking-tighter leading-none">
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2">Mobile No.</p><p className="text-gold font-mono">{p.mobile}</p></div>
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2">Passcode</p><p className="text-gold font-mono tracking-widest">{p.pw}</p></div>
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2">UID ID</p><p className="text-white font-mono">{p.uid}</p></div>
-                           <button onClick={async () => { if(confirm("Confirm user wipe?")) await db.collection('artifacts').doc(masterPath).collection('public').doc('data').collection('users').doc(p.id).delete(); }} className="text-[10px] text-red-600/40 font-black uppercase self-end text-right hover:text-red-500 transition-all">Remove 🗑️</button>
+                        <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-4 mb-4"><p className="font-black text-xl italic uppercase text-white tracking-tighter leading-none italic font-black">{p.ign}</p><span className="text-[8px] bg-white/5 px-2 py-0.5 rounded text-gray-500 uppercase font-black tracking-widest">Master File</span></div>
+                        <div className="grid grid-cols-2 gap-y-5 text-[11px] font-black italic uppercase tracking-tighter leading-none italic font-black">
+                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-1 leading-none italic font-black">Mobile No.</p><p className="text-gold font-mono text-sm">{p.mobile}</p></div>
+                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-1 leading-none italic font-black">Passcode</p><p className="text-gold font-mono text-sm">{p.pw}</p></div>
+                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-1 leading-none italic font-black">UID ID</p><p className="text-white font-mono text-sm">{p.uid}</p></div>
+                           <button onClick={async () => { if(confirm("Confirm Wipe Profile?")) await db.collection('artifacts').doc(MASTER_APP_ID).collection('public').doc('data').collection('users').doc(p.id).delete(); }} className="text-[10px] text-red-600/40 font-black uppercase self-end text-right hover:text-red-500 transition-all font-black italic underline decoration-red-900">Remove 🗑️</button>
                         </div>
                      </div>
                    ))}
@@ -389,7 +394,7 @@
           const [err, setErr] = useState('');
           const submit = (e) => {
              if(e) e.preventDefault();
-             if(!ready) return alert("System connecting... wait 2 seconds");
+             if(!ready) return alert("Engine booting... wait 2 seconds");
              if(!id || !pw) return alert("Fill credentials!");
              setLoad(true); setErr('');
              setTimeout(() => {
@@ -401,17 +406,17 @@
                       else { setErr('Access Denied: Incorrect Password.'); setLoad(false); }
                    } else { onAuth({mobile:id, pw}, true); }
                 }
-             }, 500);
+             }, 600);
           };
           return (
             <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-[#050505] font-sans">
               <div className="w-full max-w-sm text-center space-y-12 animate-in fade-in duration-700">
-                <div className="space-y-4"><div className="flex items-center justify-center gap-3"><div className="w-12 h-12 bg-gold rounded-2xl flex items-center justify-center text-black shadow-xl"><i data-lucide="target" style={{width: 28, height: 28}}></i></div><div><h1 className="text-5xl font-black italic text-white leading-none uppercase tracking-tighter">APEX HUB</h1><p className="text-[10px] text-gold font-bold uppercase tracking-[0.4em] mt-1 italic leading-none">Sign In To Play</p></div></div></div>
+                <div className="space-y-4"><div className="flex items-center justify-center gap-3"><div className="w-12 h-12 bg-gold rounded-2xl flex items-center justify-center text-black shadow-xl shadow-gold/20"><i data-lucide="target" style={{width: 28, height: 28}}></i></div><div><h1 className="text-5xl font-black italic text-white leading-none uppercase tracking-tighter italic font-black">APEX HUB</h1><p className="text-[10px] text-gold font-bold uppercase tracking-[0.4em] mt-1 italic font-black leading-none">Sign In To Play</p></div></div></div>
                 <div className="bg-[#111] p-10 rounded-[3rem] border border-[#1a1a1a] shadow-2xl space-y-10 relative overflow-hidden group">
-                  <div className="text-left space-y-2"><h2 className="text-6xl font-black uppercase italic text-white tracking-tighter leading-none italic font-black">LOGIN</h2><p className="text-xs text-gray-600 font-bold uppercase leading-relaxed tracking-tight italic opacity-60">Enter your credentials to drop in.</p></div>
+                  <div className="text-left space-y-2"><h2 className="text-6xl font-black uppercase italic text-white tracking-tighter leading-none font-black italic text-white">LOGIN</h2><p className="text-xs text-gray-600 font-bold uppercase leading-relaxed tracking-tight italic opacity-60">Authentication portal initialized.</p></div>
                   <form className="space-y-6" onSubmit={submit}>
-                    <div className="text-left space-y-2"><label className="text-[9px] text-gold font-black uppercase tracking-[0.3em] ml-1 font-black">Email / Mobile Number</label><input type="text" value={id} onChange={e=>setId(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none shadow-inner text-white tracking-widest uppercase" /></div>
-                    <div className="text-left space-y-2 relative"><label className="text-[9px] text-gold font-black uppercase tracking-[0.3em] ml-1 font-black">Password / Pin</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none shadow-inner text-white tracking-widest uppercase" /></div>
+                    <div className="text-left space-y-2"><label className="text-[9px] text-gold font-black uppercase tracking-[0.3em] ml-1 font-black italic">Email / Mobile Number</label><input type="text" value={id} onChange={e=>setId(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none shadow-inner text-white tracking-widest uppercase font-mono shadow-inner" placeholder="ID Number" /></div>
+                    <div className="text-left space-y-2 relative"><label className="text-[9px] text-gold font-black uppercase tracking-[0.3em] ml-1 font-black italic">Security Pin</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none shadow-inner text-white tracking-widest uppercase font-mono shadow-inner" placeholder="••••••••" /></div>
                     {err && <div className="bg-red-600/10 border border-red-600/30 p-4 rounded-xl text-[10px] font-black text-red-500 uppercase italic tracking-widest leading-none text-center italic">{err}</div>}
                     <button type="submit" disabled={load || !ready} className="w-full btn-gold py-6 rounded-2xl text-sm uppercase shadow-xl border-b-4 border-yellow-700 active:translate-y-1 transition-all italic font-black tracking-widest">{load?'AUTHORIZING...':'ENGAGE'}</button>
                   </form>
@@ -427,11 +432,11 @@
            return (
              <div className="min-h-screen flex flex-col items-center justify-center p-10 bg-[#050505] font-sans">
                <div className="w-full max-w-sm text-center space-y-12 animate-in slide-in-from-top-6 duration-700">
-                  <div className="space-y-4"><p className="text-xs font-black text-gold uppercase italic tracking-widest underline decoration-gold decoration-2 underline-offset-8 decoration-gold/50">// PROFILE INITIALIZATION</p><h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter italic leading-none text-white uppercase font-black">SETUP IDENTITY</h2></div>
+                  <div className="space-y-4"><p className="text-xs font-black text-gold uppercase italic tracking-widest underline decoration-gold decoration-2 underline-offset-8 decoration-gold/50 font-black italic leading-none">// PROFILE INITIALIZATION</p><h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter italic leading-none text-white uppercase font-black italic font-black">SETUP IDENTITY</h2></div>
                   <div className="bg-[#111] p-10 rounded-[3.5rem] border border-[#1a1a1a] shadow-2xl space-y-8 relative group overflow-hidden">
                      <div className="space-y-6">
-                        <div className="text-left space-y-2"><label className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1 font-black leading-none">Free Fire Name (IGN)</label><input type="text" onChange={e=>setIgn(e.target.value)} className="w-full bg-black border border-[#222] p-5 rounded-3xl text-sm font-black text-white focus:border-gold outline-none shadow-inner" /></div>
-                        <div className="text-left space-y-2"><label className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1 font-black leading-none">Free Fire UID (ID)</label><input type="number" onChange={e=>setUid(e.target.value)} className="w-full bg-black border border-[#222] p-5 rounded-3xl text-sm font-black text-white focus:border-gold outline-none shadow-inner" /></div>
+                        <div className="text-left space-y-2"><label className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1 font-black leading-none italic">Free Fire Name (IGN)</label><input type="text" onChange={e=>setIgn(e.target.value)} className="w-full bg-black border border-[#222] p-5 rounded-3xl text-sm font-black text-white focus:border-gold outline-none shadow-inner" /></div>
+                        <div className="text-left space-y-2"><label className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1 font-black leading-none italic">Free Fire UID (ID)</label><input type="number" onChange={e=>setUid(e.target.value)} className="w-full bg-black border border-[#222] p-5 rounded-3xl text-sm font-black text-white focus:border-gold outline-none shadow-inner" /></div>
                      </div>
                      <button onClick={()=>onDone({...user, ign, uid})} className="w-full btn-gold py-6 rounded-[2.5rem] text-sm shadow-xl border-b-4 border-yellow-700 active:translate-y-1 transition-all uppercase tracking-widest font-black italic">Engage Profile ✅</button>
                   </div>
