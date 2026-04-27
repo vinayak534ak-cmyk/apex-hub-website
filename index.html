@@ -17,7 +17,7 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; margin: 0; padding: 0; }
         .text-gold { color: #facc15; }
         .bg-gold { background-color: #facc15; }
         .btn-gold { background-color: #facc15; color: #000; font-weight: 900; border-bottom: 4px solid #a16207; transition: all 0.1s; }
@@ -33,7 +33,6 @@
         const { useState, useEffect } = React;
         const { createRoot } = ReactDOM;
 
-        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
           apiKey: "AIzaSyDzBQO4rlXQV5jTZzLopFp_WSvgSA_r5PQ",
           authDomain: "apex-hub-1eee0.firebaseapp.com",
@@ -46,7 +45,6 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        
         const MASTER_PATH = "APEX_MASTER_ULTIMATE_SULTANPUR_V1"; 
 
         function App() {
@@ -58,14 +56,7 @@
           const [ready, setReady] = useState(false);
 
           useEffect(() => {
-            // Re-captcha container for phone auth (optional but kept for safety)
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'invisible'
-            });
-
             const rootRef = db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data');
-            
-            // Sync Data
             rootRef.collection('matches').onSnapshot(s => setMatches(s.docs.map(d=>({id: d.id, ...d.data()}))));
             rootRef.collection('registrations').onSnapshot(s => setRegs(s.docs.map(d=>({id: d.id, ...d.data()}))));
             rootRef.collection('users').onSnapshot(s => {
@@ -76,41 +67,43 @@
 
           useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [view, user, ready]);
 
-          if (!ready) return <div className="min-h-screen flex items-center justify-center bg-black text-gold">Syncing...</div>;
+          if (!ready) return <div className="min-h-screen flex items-center justify-center bg-black text-gold font-bold">LOADING APEX HUB...</div>;
 
           if (!user) return <AuthScreen onAuth={(u) => { localStorage.setItem('apex_auth_v10', JSON.stringify(u)); setUser(u); }} players={players} db={db} />;
 
           return (
-            <div className="min-h-screen flex flex-col max-w-md mx-auto bg-[#050505] relative border-x border-[#111]">
-              <header className="p-4 flex justify-between items-center border-b border-[#111] sticky top-0 bg-black z-50">
-                <h1 className="text-xl font-black italic text-gold">APEX HUB</h1>
-                <button onClick={() => { localStorage.removeItem('apex_auth_v10'); setUser(null); }} className="text-red-500"><i data-lucide="log-out"></i></button>
+            <div className="min-h-screen flex flex-col max-w-md mx-auto bg-[#050505] relative border-x border-[#111] shadow-2xl">
+              <header className="p-4 flex justify-between items-center bg-black border-b border-[#111] sticky top-0 z-50">
+                <h1 className="text-xl font-black italic text-gold tracking-tighter">APEX HUB</h1>
+                <button onClick={() => { localStorage.removeItem('apex_auth_v10'); setUser(null); }} className="p-2 bg-[#111] rounded text-red-500"><i data-lucide="log-out" style={{width:16}}></i></button>
               </header>
 
-              <main className="flex-1 p-5 pb-24">
+              <main className="flex-1 p-5 pb-24 overflow-y-auto">
                 {view === 'arena' && (
                     <div className="space-y-6">
-                        <h2 className="text-2xl font-black uppercase">Active <span className="text-gold">Missions</span></h2>
+                        <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// OPERATION LIVE</p><h2 className="text-3xl font-black uppercase italic leading-none">MISSION <span className="text-gold">DROPS</span></h2></div>
                         {matches.map(m => (
-                            <div key={m.id} className="card-dark p-5 space-y-4">
-                                <div className="flex justify-between">
-                                    <h3 className="font-bold text-lg">{m.label}</h3>
-                                    <span className="text-gold text-xs">{m.mode}</span>
+                            <div key={m.id} className="card-dark p-5 space-y-4 shadow-xl">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-xl font-black italic uppercase leading-none">{m.label}</h3>
+                                    <span className="bg-gold text-black text-[9px] font-black px-3 py-1 rounded-full">{m.mode}</span>
                                 </div>
-                                <button className="w-full btn-gold py-3 rounded-xl uppercase text-[10px]">View Details</button>
+                                <div className="flex justify-between border-t border-[#111] pt-3">
+                                    <div className="text-center"><p className="text-[8px] text-gray-500 uppercase font-bold">Prize</p><p className="text-gold font-black">₹{m.prize}</p></div>
+                                    <div className="text-center"><p className="text-[8px] text-gray-500 uppercase font-bold">Entry</p><p className="text-gold font-black">₹{m.fee}</p></div>
+                                </div>
+                                <button className="w-full btn-gold py-3 rounded-xl uppercase text-xs font-black italic">Join Now</button>
                             </div>
                         ))}
                     </div>
                 )}
-                {user.isAdmin && view === 'admin' && <AdminPanel list={matches} regs={regs} players={players} db={db} />}
+                {view === 'profile' && <div className="text-center py-10"><h2 className="text-2xl font-black text-gold italic">{user.ign}</h2><p className="text-gray-500 mt-2 font-mono">{user.mobile}</p></div>}
               </main>
 
-              <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-black border-t border-[#111] flex justify-around p-4">
-                <button onClick={()=>setView('arena')} className={view==='arena'?'text-gold':''}><i data-lucide="gamepad-2"></i></button>
-                <button onClick={()=>setView('profile')} className={view==='profile'?'text-gold':''}><i data-lucide="user"></i></button>
-                {user.isAdmin && <button onClick={()=>setView('admin')} className={view==='admin'?'text-gold':''}><i data-lucide="settings"></i></button>}
+              <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-black border-t border-[#111] flex justify-around p-4 z-50">
+                <button onClick={()=>setView('arena')} className={`p-2 ${view==='arena'?'text-gold':'text-gray-600'}`}><i data-lucide="gamepad-2"></i></button>
+                <button onClick={()=>setView('profile')} className={`p-2 ${view==='profile'?'text-gold':'text-gray-600'}`}><i data-lucide="user"></i></button>
               </nav>
-              <div id="recaptcha-container"></div>
             </div>
           );
         }
@@ -125,25 +118,26 @@
           const [err, setErr] = useState('');
 
           const handleAuth = async (e) => {
-             e.preventDefault();
+             if(e) e.preventDefault();
+             if(!email || !pw) return alert("All fields required!");
              setLoad(true); setErr('');
 
-             // Simple logic: if user enters phone, convert to fake email for Firebase
              let finalEmail = email.includes('@') ? email : `${email}@apex.com`;
 
              try {
                 if(mode === 'register') {
-                    const userCredential = await auth.createUserWithEmailAndPassword(finalEmail, pw);
+                    if(!ign || !uid) throw new Error("Please fill IGN and UID");
+                    await auth.createUserWithEmailAndPassword(finalEmail, pw);
                     const userData = { email: finalEmail, mobile: email, ign, uid, isAdmin: false };
                     await db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('users').add(userData);
                     onAuth(userData);
                 } else {
                     if(email === 'admin' && pw === 'admin') {
-                        onAuth({ign: 'Master Admin', isAdmin: true});
+                        onAuth({ign: 'Master Admin', isAdmin: true, mobile: 'admin'});
                     } else {
                         await auth.signInWithEmailAndPassword(finalEmail, pw);
                         const p = players.find(x => x.mobile === email || x.email === finalEmail);
-                        onAuth(p || {email: finalEmail, ign: 'Hunter'});
+                        onAuth(p || {mobile: email, ign: 'Hunter'});
                     }
                 }
              } catch (error) {
@@ -153,34 +147,34 @@
           };
 
           return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-black">
-              <div className="w-full max-w-sm space-y-8">
-                <div className="text-center">
-                    <h1 className="text-4xl font-black text-white italic">APEX HUB</h1>
-                    <p className="text-gold text-[10px] tracking-widest uppercase">Sultanpur Elite Arena</p>
+            <div className="min-h-screen flex items-center justify-center p-8 bg-black">
+              <div className="w-full max-w-sm space-y-10">
+                <div className="text-center space-y-2">
+                    <h1 className="text-5xl font-black italic text-white tracking-tighter">APEX HUB</h1>
+                    <p className="text-gold text-[10px] tracking-[0.5em] uppercase font-bold">Sultanpur Elite</p>
                 </div>
 
-                <div className="card-dark p-8 space-y-6">
-                  <div className="flex bg-black p-1 rounded-xl border border-[#1a1a1a]">
-                    <button onClick={()=>setMode('login')} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg ${mode==='login'?'bg-gold text-black':'text-gray-500'}`}>Login</button>
-                    <button onClick={()=>setMode('register')} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg ${mode==='register'?'bg-gold text-black':'text-gray-500'}`}>Register</button>
+                <div className="card-dark p-8 space-y-6 shadow-2xl border-t-4 border-t-gold">
+                  <div className="flex bg-black p-1 rounded-2xl border border-[#1a1a1a]">
+                    <button onClick={()=>setMode('login')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${mode==='login'?'bg-gold text-black':'text-gray-500'}`}>Sign In</button>
+                    <button onClick={()=>setMode('register')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${mode==='register'?'bg-gold text-black':'text-gray-500'}`}>Register</button>
                   </div>
 
                   <form className="space-y-4" onSubmit={handleAuth}>
-                    <input type="text" placeholder="Phone or Email" onChange={e=>setEmail(e.target.value)} className="w-full bg-black border border-[#222] p-4 rounded-xl text-white outline-none focus:border-gold" required />
-                    <input type="password" placeholder="Password" onChange={e=>setPw(e.target.value)} className="w-full bg-black border border-[#222] p-4 rounded-xl text-white outline-none focus:border-gold" required />
+                    <input type="text" placeholder="Mobile Number" onChange={e=>setEmail(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-4 rounded-2xl text-white font-bold outline-none focus:border-gold" />
+                    <input type="password" placeholder="Passcode (Min 6)" onChange={e=>setPw(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-4 rounded-2xl text-white font-bold outline-none focus:border-gold" />
                     
                     {mode === 'register' && (
-                        <>
-                           <input type="text" placeholder="In-Game Name (IGN)" onChange={e=>setIgn(e.target.value)} className="w-full bg-black border border-[#222] p-4 rounded-xl text-white outline-none focus:border-gold" required />
-                           <input type="text" placeholder="Free Fire UID" onChange={e=>setUid(e.target.value)} className="w-full bg-black border border-[#222] p-4 rounded-xl text-white outline-none focus:border-gold" required />
-                        </>
+                        <div className="space-y-4 animate-in fade-in">
+                           <input type="text" placeholder="In-Game Name" onChange={e=>setIgn(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-4 rounded-2xl text-white font-bold outline-none focus:border-gold" />
+                           <input type="text" placeholder="Game UID" onChange={e=>setUid(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-4 rounded-2xl text-white font-bold outline-none focus:border-gold" />
+                        </div>
                     )}
 
-                    {err && <p className="text-red-500 text-[10px] uppercase text-center font-bold">{err}</p>}
+                    {err && <p className="text-red-500 text-[9px] uppercase text-center font-black tracking-widest">{err}</p>}
                     
-                    <button type="submit" disabled={load} className="w-full btn-gold py-4 rounded-xl uppercase font-black italic tracking-widest">
-                        {load ? 'Authorizing...' : (mode==='login' ? 'Engage' : 'Create Account')}
+                    <button type="submit" disabled={load} className="w-full btn-gold py-5 rounded-2xl uppercase font-black italic tracking-widest shadow-xl">
+                        {load ? 'AUTHORIZING...' : (mode==='login' ? 'ENGAGE ARENA' : 'CREATE PROFILE')}
                     </button>
                   </form>
                 </div>
@@ -188,9 +182,6 @@
             </div>
           );
         }
-
-        // Admin and other components remain same as your logic...
-        function AdminPanel({ list, db }) { return <div className="text-white p-4">Admin Dashboard Active</div>; }
 
         const container = document.getElementById('root');
         const root = createRoot(container);
