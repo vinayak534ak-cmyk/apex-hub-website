@@ -3,459 +3,357 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apex Hub - Free Fire Tournaments</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <title>Apex Hub</title>
     <style>
-        /* --- Root & Reset Styles --- */
-        :root {
-            --bg-color: #121212;
-            --card-bg-color: #1a1a1a;
-            --main-yellow: #f9d02c;
-            --text-white: #ffffff;
-            --text-grey: #a0a0a0;
-            --input-bg: #e0e0e0;
-            --error-red: #d32f2f;
-            --status-pending: #ffc107;
-            --badget-red: #e74c3c;
-            --font-heading: 'Oswald', sans-serif;
-            --font-body: 'Open Sans', sans-serif;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: var(--font-body); background-color: var(--bg-color); color: var(--text-white); -webkit-font-smoothing: antialiased; }
-
-        /* --- Helper Classes --- */
-        .text-yellow { color: var(--main-yellow); }
-        .text-grey { color: var(--text-grey); }
-        .d-flex { display: flex; align-items: center; }
-        .justify-between { justify-content: space-between; }
-        .f-heading { font-family: var(--font-heading); text-transform: uppercase; }
+        /* --- STYLES (Dark Esports Theme) --- */
+        :root { --bg: #121212; --card: #1e1e1e; --primary: #f9d02c; --text: #fff; --gray: #aaa; --danger: #e74c3c; --success: #2ecc71; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 70px; }
         .hidden { display: none !important; }
-
-        /* Background grid pattern */
-        .bg-grid {
-            background-image: linear-gradient(rgba(26, 26, 26, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(26, 26, 26, 0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
-        /* --- Application Container --- */
-        #app-wrapper {
-            width: 100%; max-width: 420px; /* Simulated phone screen */
-            margin: 0 auto; height: 100vh;
-            border-left: 1px solid #333; border-right: 1px solid #333;
-            overflow-y: auto; overflow-x: hidden; position: relative;
-        }
-
-        /* --- Shared Card Style --- */
-        .card { background-color: var(--card-bg-color); border-radius: 8px; border: 1px solid #2a2a2a; padding: 15px; margin-bottom: 15px; }
-
-        /* =========================================
-           LOGIN PAGE STYLES (image_3.png)
-           ========================================= */
-        #login-page { padding: 40px 20px; text-align: center; }
-        .login-logo { margin-bottom: 40px; }
-        .login-logo i { font-size: 48px; color: var(--main-yellow); border: 2px solid var(--main-yellow); border-radius: 8px; padding: 10px; }
-        .login-title h2 { font-size: 32px; font-family: var(--font-heading); text-transform: uppercase; margin-bottom: 25px; font-weight: 700; }
-        .login-subtext { font-size: 14px; margin-bottom: 40px; }
-
-        .input-group { text-align: left; margin-bottom: 15px; }
-        .input-label { font-size: 12px; color: var(--main-yellow); text-transform: uppercase; margin-bottom: 5px; font-weight: 600; }
-        .input-wrapper { position: relative; background: var(--input-bg); border-radius: 5px; padding: 10px; color: #121212; display: flex; align-items: center; border: 1px solid transparent;}
-        .input-wrapper.error { border-color: var(--error-red); }
-        .input-wrapper input { border: none; background: none; font-size: 16px; font-family: monospace; width: 100%; outline: none; }
-        .input-wrapper i { margin-right: 10px; color: #666; font-size: 16px; }
-
-        #login-error-msg { background: rgba(211, 47, 47, 0.2); color: var(--text-white); border-radius: 5px; padding: 10px; font-size: 14px; text-align: left; margin-top: 10px; display: flex; align-items: center; }
-        #login-error-msg i { color: var(--error-red); margin-right: 10px; font-size: 18px; }
-
-        .engage-btn { background-color: var(--main-yellow); color: #000; border: none; padding: 15px; border-radius: 5px; width: 100%; text-transform: uppercase; font-family: var(--font-heading); font-size: 18px; font-weight: 700; cursor: pointer; margin-top: 20px; letter-spacing: 1px;}
-
-        /* =========================================
-           MAIN APP HEADER STYLES (image_0.png)
-           ========================================= */
-        header { background-color: #000; padding: 15px; border-bottom: 1px solid #222; margin-bottom: 10px; position: sticky; top: 0; z-index: 100; }
-        .header-logo i { font-size: 24px; color: var(--main-yellow); border: 2px solid var(--main-yellow); border-radius: 4px; padding: 5px; margin-right: 10px; }
-        .header-title h1 { font-size: 18px; line-height: 1.1; }
-        .logout-btn { border: 1px solid #444; color: var(--text-grey); background: none; padding: 8px 15px; border-radius: 5px; font-size: 12px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; }
-        .logout-btn i { margin-left: 5px; font-size: 14px;}
-
-        /* --- Main Tabs --- */
-        .main-tabs { display: flex; border-bottom: 1px solid #222; margin-bottom: 15px; padding: 0 15px; }
-        .tab-item { color: var(--main-yellow); font-family: var(--font-heading); font-size: 14px; text-transform: uppercase; padding: 10px 0; margin-right: 30px; cursor: pointer; position: relative; }
-        .tab-item.active { font-weight: 700; }
-        .tab-item.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: var(--main-yellow); }
-        .tab-item:not(.active) { color: var(--text-grey); }
-
-        /* =========================================
-           TOURNAMENTS PAGE STYLES (image_1.png, image_0.png)
-           ========================================= */
-        #tournaments-page { padding: 0 15px 15px; }
-        .battlefield-header { margin-bottom: 20px; padding-left: 10px; position: relative;}
-        .battlefield-header::before { content: '//'; color: var(--main-yellow); font-family: monospace; font-size: 18px; margin-right: 10px;}
-        .battlefield-header h2 { font-size: 20px; font-weight: 700; line-height: 1.2; text-transform: uppercase; }
-
-        .battle-rules-text { font-size: 13px; color: var(--text-grey); margin-bottom: 20px; line-height: 1.5; }
-
-        /* Mode Selector */
-        .mode-selector { background-color: var(--card-bg-color); border: 1px solid #2a2a2a; border-radius: 20px; padding: 4px; display: inline-flex; margin-bottom: 20px; }
-        .mode-item { font-size: 11px; text-transform: uppercase; padding: 8px 18px; color: var(--text-grey); border-radius: 16px; cursor: pointer; font-weight: 600; }
-        .mode-item.active { background-color: var(--main-yellow); color: #000; }
-
-        .battles-count { font-size: 13px; color: var(--text-grey); display: flex; align-items: center; margin-bottom: 20px;}
-        .battles-count i { color: var(--main-yellow); font-size: 16px; margin-right: 8px; }
-
-        /* --- Tournament Card --- */
-        .tm-card-header { margin-bottom: 15px; position: relative; }
-        .tm-card-time { font-size: 28px; color: var(--text-white); font-weight: 700; font-family: var(--font-heading); margin-top: -5px;}
-        .tm-card-label { font-size: 10px; text-transform: uppercase; color: var(--text-grey); }
-        .tm-card-icon { color: var(--main-yellow); font-size: 14px; margin-right: 8px;}
-        .mode-badge { position: absolute; right: 0; top: 0; font-size: 10px; text-transform: uppercase; padding: 3px 10px; border-radius: 15px; font-weight: 700; }
-        .mode-badge.solo-cs { background: #60401d; border: 1px solid #8e622b; color: var(--main-yellow); }
-        .mode-badge.squad-cs { background: #601a1a; border: 1px solid #a93232; color: #a93232; }
-
-        .countdown-row { border-top: 1px solid #222; border-bottom: 1px solid #222; padding: 8px 0; margin-bottom: 15px;}
-        .countdown-label { font-size: 10px; text-transform: uppercase; color: var(--text-grey); font-weight: 600; letter-spacing: 1px; flex-grow: 1;}
-        .countdown-timer { font-family: monospace; font-size: 18px; color: var(--text-white); }
-
-        .tm-stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 15px;}
-        .tm-stat-label { font-size: 10px; text-transform: uppercase; color: var(--text-grey); font-weight: 600;}
-        .tm-stat-value { font-size: 18px; color: var(--main-yellow); font-weight: 700; font-family: var(--font-heading); margin-top: 2px;}
-        .tm-stat-value i { font-size: 14px; margin-right: 5px; color: var(--main-yellow);}
-
-        .join-btn { background-color: var(--main-yellow); color: #000; border: none; padding: 12px; border-radius: 5px; width: 100%; text-transform: uppercase; font-family: var(--font-heading); font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 1px;}
-
-        /* =========================================
-           MY TOURNAMENTS PAGE STYLES (image_2.png)
-           ========================================= */
-        #my-tournaments-page { padding: 0 15px 15px; }
-        .mission-header { margin-bottom: 15px; padding-left: 10px;}
-        .mission-header::before { content: '//'; color: var(--main-yellow); font-family: monospace; font-size: 18px; margin-right: 10px;}
-        .mission-header h2 { font-size: 20px; font-weight: 700; line-height: 1.2; text-transform: uppercase; }
-
-        .mission-subtext { font-size: 13px; color: var(--text-grey); margin-bottom: 15px; line-height: 1.5; }
-
-        /* Stats Blocks */
-        .my-stats-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px;}
-        .stats-block { background-color: var(--card-bg-color); border-radius: 8px; padding: 15px; border: 1px solid #2a2a2a;}
-        .stat-block-label { font-size: 10px; text-transform: uppercase; color: var(--text-grey); font-weight: 600; line-height: 1.1;}
-        .stat-block-value { font-size: 32px; color: var(--text-white); font-weight: 700; font-family: var(--font-heading); margin-top: 5px;}
-        .stats-block.approved .stat-block-value { color: #2ecc71; }
-        .stats-block.pending .stat-block-value { color: #ff9f43; }
-
-        /* Pending Card */
-        .pending-card { margin-top: 15px; }
-        .pending-header { border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 15px; }
-        .pending-date-mode { font-size: 12px; text-transform: uppercase; color: var(--text-grey); font-weight: 600;}
-        .pending-status-badge { display: flex; align-items: center; font-size: 10px; text-transform: uppercase; background: #503d1c; color: var(--status-pending); padding: 5px 12px; border-radius: 15px; font-weight: 700; border: 1px solid #8c6a2b; margin-top: 8px;}
-        .pending-status-badge i { font-size: 11px; margin-right: 6px; color: var(--status-pending); }
-
-        .detail-row { display: flex; margin-bottom: 10px; font-size: 14px; }
-        .detail-row .text-grey { width: 100px; }
-        .detail-row b { color: var(--text-white); }
-
-        /* Emergent Watermark */
-        .emergent-watermark {
-            position: fixed; bottom: 15px; right: 15px;
-            background-color: #000; color: var(--text-grey);
-            font-size: 12px; padding: 10px 15px; border-radius: 20px;
-            border: 1px solid #333; cursor: pointer;
-            z-index: 10; display: flex; align-items: center;
-        }
-        .emergent-watermark i { color: var(--main-yellow); margin-right: 8px; font-size: 16px; }
-
-        /* =========================================
-           ADMIN PAGE STYLES (New - Dummy Panel)
-           ========================================= */
-        #admin-page { padding: 40px 20px; }
-        .admin-title { font-family: var(--font-heading); text-transform: uppercase; font-size: 24px; color: var(--main-yellow); margin-bottom: 30px; text-align: center; }
-        .admin-btn { background-color: var(--main-yellow); color: #000; border: none; padding: 12px; border-radius: 5px; font-family: var(--font-heading); font-size: 16px; font-weight: 700; cursor: pointer; }
+        
+        header { background: #000; padding: 15px; text-align: center; border-bottom: 2px solid var(--primary); font-weight: bold; font-size: 20px; letter-spacing: 2px; }
+        .container { padding: 20px; max-width: 500px; margin: auto; }
+        
+        .card { background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333; }
+        .card h3 { color: var(--primary); margin-bottom: 5px; text-transform: uppercase; }
+        
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 5px; }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; color: #000; font-weight: bold; text-transform: uppercase; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+        button.danger { background: var(--danger); color: white; }
+        button.success { background: var(--success); color: white; }
+        
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge.pending { background: orange; color: black; }
+        .badge.approved { background: var(--success); color: white; }
+        
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #000; display: flex; border-top: 1px solid #333; max-width: 500px; left: 50%; transform: translateX(-50%); }
+        .nav-item { flex: 1; text-align: center; padding: 15px 0; color: var(--gray); cursor: pointer; font-size: 12px; text-transform: uppercase; font-weight: bold; }
+        .nav-item.active { color: var(--primary); border-top: 2px solid var(--primary); }
+        
+        .rules-list li { margin-bottom: 15px; background: #2a2a2a; padding: 10px; border-left: 4px solid var(--primary); }
+        table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th, td { border: 1px solid #444; padding: 5px; }
     </style>
 </head>
-<body class="bg-grid">
+<body>
 
-    <button class="emergent-watermark">
-        <i class="fas fa-check-circle"></i> Made with Emergent
-    </button>
+    <header id="main-header">APEX HUB</header>
 
-    <div id="app-wrapper">
-
-        <div id="login-page">
-            <div class="login-logo">
-                <i class="fas fa-bullseye"></i>
-            </div>
-            <div class="login-title">
-                <h2>APEX HUB</h2>
-                <div class="input-label" style="text-align: center; margin-top:-20px; color: var(--text-grey);">SIGN IN TO PLAY</div>
-            </div>
-
-            <div class="card login-card" style="margin-top: 30px;">
-                <div class="login-subtext text-grey">Enter your credentials to drop into today's tournaments.</div>
-                
-                <div class="input-group">
-                    <div class="input-label">Email or Admin Number</div>
-                    <div class="input-wrapper" id="login-email-wrap">
-                        <i class="fas fa-envelope"></i>
-                        <input type="text" id="login-input" placeholder="vinayak534ak@gmail.com" value="vinayak534ak@gmail.com">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <div class="input-label">Password</div>
-                    <div class="input-wrapper" id="login-password-wrap">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="login-password" value="password123">
-                    </div>
-                </div>
-
-                <div id="login-error-msg" class="hidden">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Something went wrong. Please try again.
-                </div>
-
-                <button class="engage-btn" onclick="performLogin()">ENGAGE</button>
-            </div>
+    <div id="auth-section" class="container">
+        <div id="login-box" class="card">
+            <h3>Login</h3>
+            <input type="text" id="login-phone" placeholder="Phone Number (Admin: 'admin')">
+            <input type="password" id="login-pass" placeholder="Password (Admin: 'admin')">
+            <button onclick="login()">Enter Arena</button>
+            <p style="text-align: center; margin-top: 15px; font-size: 14px; color: var(--primary); cursor: pointer;" onclick="toggleAuth()">New Player? Register Here</p>
         </div>
 
-        <div id="main-content" class="hidden">
-            <header class="d-flex justify-between">
-                <div class="d-flex header-logo-title">
-                    <div class="header-logo">
-                        <i class="fas fa-bullseye"></i>
-                    </div>
-                    <div class="header-title f-heading">
-                        <h1>APEX HUB</h1>
-                        <div class="input-label" style="color: var(--text-grey); font-size: 8px;">FREE FIRE TOURNAMENTS</div>
-                    </div>
-                </div>
-                <button class="logout-btn" onclick="performLogout()">
-                    LOGOUT <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </header>
-
-            <div class="main-tabs">
-                <div class="tab-item active" id="tab-tournaments" onclick="switchTab('tournaments')">Tournaments</div>
-                <div class="tab-item" id="tab-my-tournaments" onclick="switchTab('my')">My Tournaments</div>
-            </div>
-
-            <div id="tournaments-page">
-                <div class="battlefield-header f-heading text-white">
-                    <span class="input-label text-grey" style="letter-spacing: 2px;">// TODAY'S BATTLEFIELD</span>
-                    <h2>BOOYAH O'CLOCK – <br><span class="text-yellow">PICK YOUR SLOT</span></h2>
-                </div>
-                
-                <p class="battle-rules-text">Tournaments run hourly from 6 PM to 11 PM IST. Pay the ₹40 entry, upload your screenshot, and the room ID drops the moment your match goes live.</p>
-
-                <div class="mode-selector">
-                    <div class="mode-item active">ALL MODES</div>
-                    <div class="mode-item">SOLO CS</div>
-                    <div class="mode-item">SQUAD CS</div>
-                </div>
-
-                <div class="battles-count">
-                    <i class="fas fa-trophy"></i> 12 BATTLES TODAY
-                </div>
-
-                <div class="card tm-card">
-                    <div class="tm-card-header">
-                        <span class="tm-card-label">Starts at</span>
-                        <h3 class="tm-card-time">6:00 PM</h3>
-                        <span class="mode-badge solo-cs">SOLO CS</span>
-                    </div>
-
-                    <div class="countdown-row d-flex">
-                        <span class="countdown-label">COUNTDOWN</span>
-                        <span class="countdown-timer">03:46:02</span>
-                    </div>
-
-                    <div class="tm-stats-grid">
-                        <div class="tm-stat-block">
-                            <span class="tm-stat-label">ENTRY</span>
-                            <div class="tm-stat-value"><i class="fas fa-coins"></i> ₹40</div>
-                        </div>
-                        <div class="tm-stat-block">
-                            <span class="tm-stat-label">PRIZE</span>
-                            <div class="tm-stat-value">₹200</div>
-                        </div>
-                        <div class="tm-stat-block">
-                            <span class="tm-stat-label">SLOTS</span>
-                            <div class="tm-stat-value"><i class="fas fa-users"></i> 0/48</div>
-                        </div>
-                    </div>
-
-                    <button class="join-btn">JOIN TOURNAMENT</button>
-                </div>
-
-                <div class="card tm-card" style="position: relative; padding-top: 15px;">
-                     <div class="d-flex text-yellow" style="font-size: 10px; text-transform: uppercase; position: absolute; top: 10px; right: 15px;">
-                        <i class="fas fa-bullseye tm-card-icon" style="color: var(--main-yellow); font-size: 10px; margin-right: 5px;"></i> Solo CS
-                    </div>
-
-                    <div class="tm-card-header" style="margin-top: 15px;">
-                        <span class="tm-card-label">Starts at</span>
-                        <h3 class="tm-card-time">6:00 PM</h3>
-                        <span class="mode-badge squad-cs">SQUAD CS</span>
-                    </div>
-
-                    <div class="countdown-row d-flex">
-                        <span class="countdown-label">COUNTDOWN</span>
-                        <span class="countdown-timer">03:46:02</span>
-                    </div>
-
-                    <div class="tm-stats-grid">
-                        <div class="tm-stat-block">
-                            <span class="tm-stat-label">ENTRY</span>
-                            <div class="tm-stat-value"><i class="fas fa-coins"></i> ₹40</div>
-                        </div>
-                        <div class="tm-stat-block">
-                            <span class="tm-stat-label">PRIZE</span>
-                            <div class="tm-stat-value">₹400</div>
-                        </div>
-                        <div class="tm-stat-block">
-                            <span class="tm-stat-label">SLOTS</span>
-                            <div class="tm-stat-value"><i class="fas fa-users"></i> 0/12</div>
-                        </div>
-                    </div>
-
-                    <button class="join-btn">JOIN TOURNAMENT</button>
-                </div>
-
-            </div> <div id="my-tournaments-page" class="hidden">
-                <div class="mission-header f-heading text-white">
-                    <span class="input-label text-grey" style="letter-spacing: 2px;">// MISSION LOG</span>
-                    <h2>MY TOURNAMENTS</h2>
-                </div>
-
-                <p class="mission-subtext text-grey">Every battle you've signed up for. Room ID and password unlock the moment your match goes live.</p>
-
-                <div class="my-stats-container">
-                    <div class="stats-block total">
-                        <div class="stat-block-label">TOTAL<br>JOINED</div>
-                        <div class="stat-block-value">3</div>
-                    </div>
-                    <div class="stats-block approved">
-                        <div class="stat-block-label">APPROVED</div>
-                        <div class="stat-block-value">0</div>
-                    </div>
-                    <div class="stats-block pending">
-                        <div class="stat-block-label">PENDING</div>
-                        <div class="stat-block-value">3</div>
-                    </div>
-                </div>
-
-                <div class="card pending-card">
-                    <div class="pending-header d-flex justify-between">
-                        <span class="pending-date-mode">2026-04-26 • SOLO CS</span>
-                        <div class="pending-status-badge">
-                            <i class="fas fa-hourglass-half"></i> PENDING APPROVAL
-                        </div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <span class="text-grey">FF NAME</span>
-                        <b>Vinayak</b>
-                    </div>
-                    <div class="detail-row">
-                        <span class="text-grey">FF UID</span>
-                        <b>4663555434</b>
-                    </div>
-                    <div class="detail-row">
-                        <span class="text-grey">SUBMITTED</span>
-                        <b>4/26/2026, 10:57:11 AM</b>
-                    </div>
-                </div>
-
-            </div> </div> <div id="admin-page" class="hidden">
-            <div class="login-logo">
-                <i class="fas fa-bullseye"></i>
-            </div>
-            <h1 class="admin-title">ADMIN PANEL - ACCESS GRANTED</h1>
-            <div class="card" style="text-align: center; color: var(--text-grey);">
-                <p>Welcome, Admin. Here you can create/approve tournaments.</p>
-                <p style="font-size: 12px; margin-top: 10px;">(This is a dummy admin area for interface demo)</p>
-                <button class="admin-btn logout-btn" style="border: 1px solid var(--main-yellow); color: var(--main-yellow); margin: 20px auto 0;" onclick="performLogout()">BACK TO LOGIN</button>
-            </div>
+        <div id="register-box" class="card hidden">
+            <h3>Register</h3>
+            <input type="text" id="reg-phone" placeholder="Phone Number">
+            <input type="password" id="reg-pass" placeholder="Password">
+            <input type="text" id="reg-ign" placeholder="In-Game Name (IGN)">
+            <input type="text" id="reg-uid" placeholder="Game UID">
+            <button onclick="register()">Create Account</button>
+            <p style="text-align: center; margin-top: 15px; font-size: 14px; color: var(--primary); cursor: pointer;" onclick="toggleAuth()">Already registered? Login</p>
         </div>
-
     </div>
 
+    <div id="player-dashboard" class="container hidden">
+        <div id="tab-all" class="tab-content">
+            <h2 style="margin-bottom: 15px; color: var(--gray);">ALL TOURNAMENTS</h2>
+            <div id="all-tournaments-list"></div>
+        </div>
+
+        <div id="tab-my" class="tab-content hidden">
+            <h2 style="margin-bottom: 15px; color: var(--gray);">MY TOURNAMENTS</h2>
+            <div id="my-tournaments-list"></div>
+        </div>
+
+        <div id="tab-rules" class="tab-content hidden">
+            <h2 style="margin-bottom: 15px; color: var(--gray);">TOURNAMENT RULES</h2>
+            <ul class="rules-list" style="list-style: none;">
+                <li><b>No Revive Policy:</b> Reviving teammates during specific competitive matches is strictly prohibited.</li>
+                <li><b>Anti-Teaming:</b> Any form of teaming up with opponent players will result in immediate disqualification.</li>
+                <li><b>Zero Tolerance for Hacks:</b> The use of panels, scripts, or glitches is strictly forbidden. Instant Ban.</li>
+            </ul>
+        </div>
+
+        <div id="tab-profile" class="tab-content hidden">
+            <h2 style="margin-bottom: 15px; color: var(--gray);">PLAYER PROFILE</h2>
+            <div class="card">
+                <p><b>IGN:</b> <span id="prof-ign"></span></p>
+                <p><b>Player ID:</b> <span id="prof-pid" style="color: var(--primary);"></span></p>
+                <p><b>UID:</b> <span id="prof-uid"></span></p>
+                <button onclick="logout()" class="danger" style="margin-top: 20px;">Logout</button>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchNav('all')">All</div>
+            <div class="nav-item" onclick="switchNav('my')">My Tourneys</div>
+            <div class="nav-item" onclick="switchNav('rules')">Rules</div>
+            <div class="nav-item" onclick="switchNav('profile')">Profile</div>
+        </div>
+    </div>
+
+    <div id="admin-dashboard" class="container hidden">
+        <h2 style="color: var(--primary); text-align: center; margin-bottom: 20px;">ADMIN COMMAND CENTER</h2>
+        
+        <div class="card">
+            <h3>Create Tournament</h3>
+            <input type="text" id="admin-t-name" placeholder="Tournament Name (e.g., Solo CS Daily)">
+            <select id="admin-t-mode"><option value="Solo">Solo</option><option value="Squad">Squad</option></select>
+            <input type="number" id="admin-t-fee" placeholder="Entry Fee (₹)">
+            <button onclick="createTournament()">Create (+24h Auto-Expire)</button>
+        </div>
+
+        <div class="card">
+            <h3>Update Room Details</h3>
+            <select id="admin-t-select" style="margin-bottom: 5px;"></select>
+            <input type="text" id="admin-t-room" placeholder="Room ID">
+            <input type="text" id="admin-t-pass" placeholder="Room Password">
+            <button onclick="updateRoomDetails()">Update ID & Pass</button>
+        </div>
+
+        <div class="card">
+            <h3>Pending Approvals</h3>
+            <div id="admin-pending-list"></div>
+        </div>
+
+        <div class="card" style="overflow-x: auto;">
+            <h3>All Registered Users</h3>
+            <table id="admin-users-table">
+                <tr><th>Phone</th><th>Pass</th><th>ID</th><th>IGN</th><th>UID</th></tr>
+            </table>
+        </div>
+
+        <button onclick="logout()" class="danger">Logout Admin</button>
+    </div>
+
+
     <script>
-        // --- 1. Login Logic ---
-        const userCredentials = {
-            email: "vinayak534ak@gmail.com",
-            password: "password123"
-        };
-        const adminCredentials = {
-            number: "admin123", // Example admin number
-            password: "admin"
-        };
+        // --- DATABASE SIMULATION (Local Storage) ---
+        function getDB(key) { return JSON.parse(localStorage.getItem(key)) || []; }
+        function setDB(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+        
+        let users = getDB('users');
+        let tournaments = getDB('tournaments');
+        let entries = getDB('entries');
+        let currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
-        function performLogin() {
-            const inputVal = document.getElementById('login-input').value;
-            const passwordVal = document.getElementById('login-password').value;
-            const errorMsg = document.getElementById('login-error-msg');
-            const inputWrap = document.getElementById('login-email-wrap');
-            const passwordWrap = document.getElementById('login-password-wrap');
-
-            // Reset error states
-            errorMsg.classList.add('hidden');
-            inputWrap.classList.remove('error');
-            passwordWrap.classList.remove('error');
-
-            // Check Admin Credentials first
-            if (inputVal === adminCredentials.number && passwordVal === adminCredentials.password) {
-                // Show Admin Page
-                document.getElementById('login-page').classList.add('hidden');
-                document.getElementById('admin-page').classList.remove('hidden');
-            } 
-            // Check User Credentials
-            else if (inputVal === userCredentials.email && passwordVal === userCredentials.password) {
-                // Show Main App Page
-                document.getElementById('login-page').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
-            } 
-            // Login Failed
-            else {
-                errorMsg.classList.remove('hidden');
-                inputWrap.classList.add('error');
-                passwordWrap.classList.add('error');
-            }
+        // --- AUTH LOGIC ---
+        function toggleAuth() {
+            document.getElementById('login-box').classList.toggle('hidden');
+            document.getElementById('register-box').classList.toggle('hidden');
         }
 
-        // --- 2. Logout Logic ---
-        function performLogout() {
-            // Reset to Login Page
-            document.getElementById('main-content').classList.add('hidden');
-            document.getElementById('admin-page').classList.add('hidden');
-            document.getElementById('login-page').classList.remove('hidden');
+        function register() {
+            let phone = document.getElementById('reg-phone').value;
+            let pass = document.getElementById('reg-pass').value;
+            let ign = document.getElementById('reg-ign').value;
+            let uid = document.getElementById('reg-uid').value;
             
-            // Reset forms
-            document.getElementById('login-input').value = 'vinayak534ak@gmail.com'; // Pre-filled example
-            document.getElementById('login-password').value = 'password123';
+            if(!phone || !pass || !ign || !uid) return alert("Fill all details!");
+            if(users.find(u => u.phone === phone)) return alert("Phone already registered!");
+
+            let newUser = { phone, pass, ign, uid, playerId: 'APX-' + Math.floor(1000 + Math.random() * 9000) };
+            users.push(newUser);
+            setDB('users', users);
+            alert(`Registered! Your Player ID is ${newUser.playerId}`);
             
-            // Re-activate first tab just in case
-            switchTab('tournaments');
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+            location.reload();
         }
 
-        // --- 3. Tab Switching Logic ---
-        function switchTab(pageId) {
-            const tourneysTab = document.getElementById('tab-tournaments');
-            const myTourneysTab = document.getElementById('tab-my-tournaments');
-            const tourneysPage = document.getElementById('tournaments-page');
-            const myTourneysPage = document.getElementById('my-tournaments-page');
+        function login() {
+            let phone = document.getElementById('login-phone').value;
+            let pass = document.getElementById('login-pass').value;
 
-            if (pageId === 'tournaments') {
-                tourneysTab.classList.add('active');
-                myTourneysTab.classList.remove('active');
-                tourneysPage.classList.remove('hidden');
-                myTourneysPage.classList.add('hidden');
+            if (phone === 'admin' && pass === 'admin') {
+                localStorage.setItem('currentUser', JSON.stringify({ role: 'admin' }));
+                location.reload();
             } else {
-                tourneysTab.classList.remove('active');
-                myTourneysTab.classList.add('active');
-                tourneysPage.classList.add('hidden');
-                myTourneysPage.classList.remove('hidden');
+                let user = users.find(u => u.phone === phone && u.pass === pass);
+                if (user) {
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    location.reload();
+                } else {
+                    alert("Invalid Credentials!");
+                }
             }
         }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            location.reload();
+        }
+
+        // --- NAVIGATION LOGIC ---
+        function switchNav(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+            if(tabName === 'all') renderAllTournaments();
+            if(tabName === 'my') renderMyTournaments();
+        }
+
+        // --- CLEANUP 24-HOUR TOURNAMENTS ---
+        function removeExpiredTournaments() {
+            let now = Date.now();
+            let twentyFourHours = 24 * 60 * 60 * 1000;
+            let activeTournaments = tournaments.filter(t => (now - t.createdAt) < twentyFourHours);
+            
+            if (activeTournaments.length !== tournaments.length) {
+                tournaments = activeTournaments;
+                setDB('tournaments', tournaments);
+            }
+        }
+
+        // --- PLAYER FUNCTIONS ---
+        function renderAllTournaments() {
+            removeExpiredTournaments();
+            let html = "";
+            tournaments.forEach(t => {
+                html += `<div class="card">
+                    <h3>${t.name} <span class="badge" style="float:right; background:gray;">${t.mode}</span></h3>
+                    <p>Entry: ₹${t.fee}</p>
+                    <button onclick="joinTournament('${t.id}')">Join Tournament</button>
+                </div>`;
+            });
+            document.getElementById('all-tournaments-list').innerHTML = html || "<p style='color:gray'>No active tournaments.</p>";
+        }
+
+        function joinTournament(tId) {
+            let utr = prompt("Enter UTR / Transaction ID for payment verification:");
+            if(!utr) return;
+            
+            // Check if already joined
+            if(entries.find(e => e.tId === tId && e.playerId === currentUser.playerId)) {
+                return alert("You have already joined this tournament!");
+            }
+
+            entries.push({ id: Date.now().toString(), tId, playerId: currentUser.playerId, ign: currentUser.ign, utr, status: 'Pending' });
+            setDB('entries', entries);
+            alert("Entry submitted! Waiting for Admin approval.");
+            switchNav('my');
+        }
+
+        function renderMyTournaments() {
+            let html = "";
+            let myEntries = entries.filter(e => e.playerId === currentUser.playerId);
+            
+            myEntries.forEach(e => {
+                let t = tournaments.find(t => t.id === e.tId);
+                if(!t) return; // Tournament expired
+                
+                let statusBadge = e.status === 'Pending' ? `<span class="badge pending">Pending</span>` : `<span class="badge approved">Approved</span>`;
+                let roomDetails = e.status === 'Approved' ? `<p style="color:var(--primary); margin-top:10px;"><b>Room ID:</b> ${t.roomId || 'Waiting...'}<br><b>Pass:</b> ${t.roomPass || 'Waiting...'}</p>` : '';
+
+                html += `<div class="card">
+                    <h3>${t.name} ${statusBadge}</h3>
+                    <p>UTR: ${e.utr}</p>
+                    ${roomDetails}
+                </div>`;
+            });
+            document.getElementById('my-tournaments-list').innerHTML = html || "<p style='color:gray'>You haven't joined any tournaments.</p>";
+        }
+
+        // --- ADMIN FUNCTIONS ---
+        function renderAdminData() {
+            removeExpiredTournaments();
+
+            // Populate Tournament Dropdown for Room Update
+            let selectHtml = "<option value=''>Select Tournament...</option>";
+            tournaments.forEach(t => selectHtml += `<option value='${t.id}'>${t.name}</option>`);
+            document.getElementById('admin-t-select').innerHTML = selectHtml;
+
+            // Render Pending Entries
+            let pendingHtml = "";
+            let pendingEntries = entries.filter(e => e.status === 'Pending');
+            pendingEntries.forEach(e => {
+                let t = tournaments.find(t => t.id === e.tId);
+                if(t) {
+                    pendingHtml += `<div class="card" style="border:1px solid orange">
+                        <p><b>Player:</b> ${e.ign} (${e.playerId})</p>
+                        <p><b>Tournament:</b> ${t.name}</p>
+                        <p><b>UTR:</b> ${e.utr}</p>
+                        <div style="display:flex; gap:10px;">
+                            <button class="success" onclick="approveEntry('${e.id}')">Approve</button>
+                            <button class="danger" onclick="rejectEntry('${e.id}')">Reject</button>
+                        </div>
+                    </div>`;
+                }
+            });
+            document.getElementById('admin-pending-list').innerHTML = pendingHtml || "<p>No pending approvals.</p>";
+
+            // Render All Users Table (Including Passwords as requested)
+            let table = `<tr><th>Phone</th><th>Pass</th><th>ID</th><th>IGN</th><th>UID</th></tr>`;
+            users.forEach(u => {
+                table += `<tr><td>${u.phone}</td><td>${u.pass}</td><td>${u.playerId}</td><td>${u.ign}</td><td>${u.uid}</td></tr>`;
+            });
+            document.getElementById('admin-users-table').innerHTML = table;
+        }
+
+        function createTournament() {
+            let name = document.getElementById('admin-t-name').value;
+            let mode = document.getElementById('admin-t-mode').value;
+            let fee = document.getElementById('admin-t-fee').value;
+            
+            if(!name || !fee) return alert("Fill all details!");
+
+            tournaments.push({ id: Date.now().toString(), name, mode, fee, createdAt: Date.now(), roomId: '', roomPass: '' });
+            setDB('tournaments', tournaments);
+            alert("Tournament Created!");
+            renderAdminData();
+        }
+
+        function updateRoomDetails() {
+            let tId = document.getElementById('admin-t-select').value;
+            let room = document.getElementById('admin-t-room').value;
+            let pass = document.getElementById('admin-t-pass').value;
+            
+            if(!tId || !room || !pass) return alert("Select tournament and fill ID/Pass!");
+            
+            let tIndex = tournaments.findIndex(t => t.id === tId);
+            tournaments[tIndex].roomId = room;
+            tournaments[tIndex].roomPass = pass;
+            setDB('tournaments', tournaments);
+            alert("Room Details Updated! Players can now see it.");
+            renderAdminData();
+        }
+
+        function approveEntry(entryId) {
+            let index = entries.findIndex(e => e.id === entryId);
+            entries[index].status = 'Approved';
+            setDB('entries', entries);
+            renderAdminData();
+        }
+
+        function rejectEntry(entryId) {
+            entries = entries.filter(e => e.id !== entryId);
+            setDB('entries', entries);
+            renderAdminData();
+        }
+
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            if (currentUser) {
+                document.getElementById('auth-section').classList.add('hidden');
+                if (currentUser.role === 'admin') {
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    renderAdminData();
+                } else {
+                    document.getElementById('player-dashboard').classList.remove('hidden');
+                    document.getElementById('prof-ign').innerText = currentUser.ign;
+                    document.getElementById('prof-pid').innerText = currentUser.playerId;
+                    document.getElementById('prof-uid').innerText = currentUser.uid;
+                    renderAllTournaments();
+                }
+            }
+        };
     </script>
 </body>
 </html>
