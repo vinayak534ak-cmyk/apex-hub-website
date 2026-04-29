@@ -1,40 +1,43 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex Hub - Official Portal</title>
+    <title>Apex Hub - Battle Arena Pro</title>
     
+    <!-- CSS & Stable Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDK (Compat Mode for Best Stability) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background: #0f0c29; background: linear-gradient(to bottom, #1a1a2e, #16213e, #0f0c29); color: white; margin: 0; min-height: 100vh; overflow-x: hidden; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .text-gold { color: #facc15; }
-        .bg-gold { background-color: #facc15; }
-        .btn-gold { background-color: #facc15; color: #000; font-weight: 900; border-bottom: 4px solid #a16207; transition: all 0.1s; }
-        .btn-gold:active { transform: translateY(2px); border-bottom-width: 2px; }
+        .bg-purple-main { background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); }
+        .card-purple { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 2rem; }
+        .btn-purple { background: linear-gradient(to right, #8e2de2, #4a00e0); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-purple:active { transform: scale(0.95); opacity: 0.8; }
         .slot-fill { transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .card-dark { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 1.5rem; }
-        .mission-log { border-left: 4px solid #facc15; background: #0d0d0d; border-radius: 1rem; }
-        @keyframes pulse-sync { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } }
-        .live-indicator { animation: pulse-sync 2s infinite; }
+        .input-dark { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); outline: none; transition: border 0.3s; }
+        .input-dark:focus { border-color: #8e2de2; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-view { animation: fadeIn 0.4s ease-out forwards; }
     </style>
 </head>
 <body>
     <div id="root">
-        <div class="min-h-screen flex flex-col items-center justify-center bg-[#050505]">
-            <div class="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin"></div>
-            <p class="mt-4 text-gold font-black uppercase tracking-widest text-[10px]">Apex Engine Starting...</p>
+        <div class="min-h-screen flex flex-col items-center justify-center bg-[#0f0c29]">
+            <div class="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="mt-4 text-purple-400 font-bold uppercase tracking-widest text-[10px]">Apex Hunter System Loading...</p>
         </div>
     </div>
 
@@ -55,291 +58,379 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        
-        // UNIQUE PATH LOCK
-        const MASTER_PATH = "APEX_MASTER_ULTIMATE_SULTANPUR_V1"; 
+        const MASTER_KEY = "APEX_PRO_MASTER_STABLE_V1"; 
 
         function App() {
-          const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('apex_auth_v10')) || null);
-          const [view, setView] = useState('arena');
-          const [matchMode, setMatchMode] = useState('SOLO CS');
+          const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('apex_pro_user')) || null);
+          const [authMode, setAuthMode] = useState('login'); 
+          const [view, setView] = useState('home'); 
+          const [arenaTab, setArenaTab] = useState('SOLO CS');
           
           const [matches, setMatches] = useState([]);
           const [regs, setRegs] = useState([]);
           const [players, setPlayers] = useState([]);
-          const [ready, setReady] = useState(false);
+          const [dbReady, setDbReady] = useState(false);
 
           useEffect(() => {
-            const root = db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data');
-            
-            root.collection('matches').onSnapshot(s => {
-                const all = s.docs.map(d=>({id: d.id, ...d.data()}));
-                const activeOnly = all.filter(m => (Date.now() - (m.createdAt || 0)) < 86400000);
-                setMatches(activeOnly.sort((a,b)=>a.hour - b.hour));
-            });
+            auth.signInAnonymously().then(() => {
+                const root = db.collection('artifacts').doc(MASTER_KEY).collection('public').doc('data');
+                
+                // Matches Sync (Permanent + 24h Filter)
+                root.collection('matches').onSnapshot(s => {
+                    const all = s.docs.map(d=>({id: d.id, ...d.data()}));
+                    const activeOnly = all.filter(m => (Date.now() - (m.createdAt || 0)) < 86400000);
+                    setMatches(activeOnly.sort((a,b)=>a.hour - b.hour));
+                });
 
-            root.collection('registrations').onSnapshot(s => setRegs(s.docs.map(d=>({id: d.id, ...d.data()}))));
-
-            root.collection('users').onSnapshot(s => {
-                setPlayers(s.docs.map(d=>({id: d.id, ...d.data()})));
-                setReady(true);
+                // Regs & Players Sync
+                root.collection('registrations').onSnapshot(s => setRegs(s.docs.map(d=>({id: d.id, ...d.data()}))));
+                root.collection('users').onSnapshot(s => {
+                    setPlayers(s.docs.map(d=>({id: d.id, ...d.data()})));
+                    setDbReady(true);
+                });
             });
           }, []);
 
-          useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [view, matchMode, user, ready]);
+          useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [view, arenaTab, user, authMode, dbReady]);
 
-          const logout = () => { localStorage.removeItem('apex_auth_v10'); setUser(null); };
+          const logout = () => { localStorage.removeItem('apex_pro_user'); setUser(null); };
 
-          if (!ready) return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505]">
-                <div className="w-10 h-10 border-4 border-gold border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-4 text-gold font-bold uppercase tracking-widest text-[10px]">Cloud Sync in Progress...</p>
+          if (!dbReady) return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f0c29]">
+                <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-purple-400 font-bold uppercase tracking-widest text-[10px]">Cloud Syncing...</p>
             </div>
           );
 
-          if (!user) return <AuthScreen onAuth={(u) => { localStorage.setItem('apex_auth_v10', JSON.stringify(u)); setUser(u); }} players={players} db={db} />;
+          if (!user) return <AuthScreen onAuth={(u) => { localStorage.setItem('apex_pro_user', JSON.stringify(u)); setUser(u); }} players={players} mode={authMode} setMode={setAuthMode} db={db} />;
 
           return (
-            <div className="min-h-screen flex flex-col max-w-md mx-auto bg-[#050505] border-x border-[#111] shadow-2xl relative">
-              <header className="p-4 flex justify-between items-center bg-[#050505] border-b border-[#111] sticky top-0 z-50">
+            <div className="max-w-md mx-auto min-h-screen flex flex-col relative shadow-2xl border-x border-white/5 bg-[#0f0c29]">
+              {/* Top Bar (Screenshot style) */}
+              <header className="p-4 flex justify-between items-center sticky top-0 z-50 bg-[#0f0c29]/80 backdrop-blur-xl border-b border-white/5">
                 <div className="flex items-center gap-2">
-                  <div className="bg-gold p-1.5 rounded text-black"><i data-lucide="target" style={{width: 18, height: 18}}></i></div>
-                  <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">APEX HUB</h1>
+                  <div className="w-9 h-9 bg-purple-main rounded-xl flex items-center justify-center shadow-lg"><i data-lucide="gamepad-2"></i></div>
+                  <h1 className="text-xl font-black uppercase italic tracking-tighter">BATTLE OP</h1>
                 </div>
-                <button onClick={logout} className="p-2 bg-[#111] rounded text-red-500 shadow-inner active:scale-90 transition-all"><i data-lucide="log-out" style={{width: 16, height: 16}}></i></button>
+                <div className="flex items-center gap-3">
+                   <div className="bg-white/5 px-4 py-2 rounded-full flex items-center gap-2 border border-white/10 shadow-inner">
+                      <i data-lucide="crown" className="w-4 h-4 text-yellow-400"></i>
+                      <span className="text-sm font-black">{user.wallet || 0}</span>
+                   </div>
+                   <button onClick={logout} className="p-2 bg-red-500/10 text-red-400 rounded-xl"><i data-lucide="log-out" className="w-5 h-5"></i></button>
+                </div>
               </header>
 
-              <nav className="flex bg-[#050505] border-b border-[#111] sticky top-[61px] z-40">
-                <button onClick={()=>setView('arena')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest ${view==='arena'?'text-gold border-b-2 border-gold':'text-gray-500'}`}>Arena</button>
-                <button onClick={()=>setView('history')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest ${view==='history'?'text-gold border-b-2 border-gold':'text-gray-500'}`}>Records</button>
-              </nav>
-
-              <main className="flex-1 p-5 pb-24 overflow-y-auto scrollbar-hide">
-                {view === 'arena' && <ArenaView list={matches} regs={regs} tab={matchMode} setTab={setMatchMode} user={user} db={db} />}
-                {view === 'history' && <HistoryView list={matches} regs={regs} user={user} />}
-                {view === 'profile' && <ProfileView user={user} players={players} />}
-                {view === 'rewards' && <RewardsView user={user} players={players} db={db} />}
+              {/* View Rendering */}
+              <main className="flex-1 p-5 pb-28 overflow-y-auto scrollbar-hide">
+                {view === 'home' && <HomeView setView={setView} setTab={setArenaTab} />}
+                {view === 'arena' && <ArenaView list={matches} regs={regs} tab={arenaTab} setTab={setArenaTab} user={user} db={db} />}
+                {view === 'wallet' && <WalletView user={user} db={db} />}
+                {view === 'profile' && <ProfileView user={user} setView={setView} />}
                 {user.isAdmin && view === 'admin' && <AdminPanel list={matches} regs={regs} players={players} db={db} />}
               </main>
 
-              <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#050505] border-t border-[#111] flex justify-around p-3 z-50 backdrop-blur-md">
-                <NavIcon active={view==='arena'} icon="gamepad-2" onClick={()=>setView('arena')} />
-                <NavIcon active={view==='history'} icon="history" onClick={()=>setView('history')} />
-                <NavIcon active={view==='rewards'} icon="calendar-check" onClick={()=>setView('rewards')} />
-                <NavIcon active={view==='profile'} icon="user" onClick={()=>setView('profile')} />
-                {user.isAdmin && <NavIcon active={view==='admin'} icon="settings" onClick={()=>setView('admin')} />}
+              {/* Bottom Nav (Screenshot 1000090228.jpg style) */}
+              <nav className="fixed bottom-4 left-4 right-4 max-w-[400px] mx-auto bg-white/10 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] flex justify-around p-3 z-50 shadow-2xl">
+                 <button onClick={()=>setView('home')} className={`p-3 transition-all ${view==='home'?'bg-purple-600 rounded-full scale-110 shadow-lg text-white':'text-white/40'}`}><i data-lucide="layout-dashboard"></i></button>
+                 <button onClick={()=>setView('arena')} className={`p-3 transition-all ${view==='arena'?'bg-purple-600 rounded-full scale-110 shadow-lg text-white':'text-white/40'}`}><i data-lucide="gamepad-2"></i></button>
+                 <button onClick={()=>setView('wallet')} className={`p-3 transition-all ${view==='wallet'?'bg-purple-600 rounded-full scale-110 shadow-lg text-white':'text-white/40'}`}><i data-lucide="wallet"></i></button>
+                 <button onClick={()=>setView('profile')} className={`p-3 transition-all ${view==='profile'?'bg-purple-600 rounded-full scale-110 shadow-lg text-white':'text-white/40'}`}><i data-lucide="user"></i></button>
+                 {user.isAdmin && <button onClick={()=>setView('admin')} className={`p-3 transition-all ${view==='admin'?'bg-red-600 rounded-full scale-110 shadow-lg text-white':'text-white/40'}`}><i data-lucide="settings"></i></button>}
               </nav>
             </div>
           );
         }
 
-        const NavIcon = ({ active, icon, onClick }) => (
-          <button onClick={onClick} className={`p-2 transition-all ${active ? 'text-gold scale-125' : 'text-gray-600'}`}><i data-lucide={icon}></i></button>
-        );
+        // --- AUTH SECTION ---
+        function AuthScreen({ onAuth, players, mode, setMode, db }) {
+          const [data, setData] = useState({ mobile: '', pin: '', name: '', email: '', refer: '' });
+          const [loading, setLoading] = useState(false);
 
-        function ArenaView({ list, regs, tab, setTab, user, db }) {
-          const filtered = list.filter(m => m.mode === tab);
-          return (
-            <div className="space-y-6 animate-in fade-in">
-              <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// OPERATION LIVE</p><h2 className="text-3xl font-black uppercase leading-none italic">MISSION <span className="text-gold">DROPS</span></h2></div>
-              <div className="flex gap-2 pb-1 overflow-x-auto scrollbar-hide">
-                {['SOLO CS', 'SQUAD CS'].map(t => (
-                  <button key={t} onClick={()=>setTab(t)} className={`px-6 py-2 rounded text-[10px] font-black border tracking-tighter ${tab===t?'bg-gold text-black border-gold shadow-lg':'bg-[#111] text-gray-500 border-[#222]'}`}>{t}</button>
-                ))}
-              </div>
-              <div className="space-y-5">
-                {filtered.map(m => <TournamentCard key={m.id} m={m} user={user} regs={regs} db={db} />)}
-                {filtered.length === 0 && <div className="py-20 text-center opacity-30 italic font-black uppercase text-xs border border-dashed border-[#222] rounded-3xl">No Missions Deployed</div>}
-              </div>
-            </div>
-          );
-        }
-
-        function TournamentCard({ m, user, regs, db }) {
-          const [modal, setModal] = useState(false);
-          const [load, setLoad] = useState(false);
-          const [confirmIgn, setConfirmIgn] = useState(user.ign);
-          const [confirmUid, setConfirmUid] = useState(user.uid);
-
-          const myReg = regs.find(r => r.matchId === m.id && r.email === user.email);
-          const approved = regs.filter(r => r.matchId === m.id && r.status === 'approved').length;
-          const isFull = approved >= m.slots;
-          const progress = Math.min((approved / m.slots) * 100, 100);
-          const isLive = new Date().getHours() >= m.hour;
-
-          const join = async (utr) => {
-            if(!utr || !confirmIgn || !confirmUid) return alert("All fields are required!");
-            setLoad(true);
-            try {
-              await db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('registrations').add({
-                matchId: m.id, email: user.email, ign: confirmIgn, uid: confirmUid, utr,
-                status: 'pending', time: Date.now(), label: m.label, mode: m.mode
-              });
-              setModal(false);
-            } catch(e) { alert("Registration failed!"); }
-            setLoad(false);
+          const handleAuth = async (e) => {
+            if(e) e.preventDefault();
+            setLoading(true);
+            if(mode === 'signup') {
+                if(!data.mobile || !data.pin || !data.name) return alert("Fill required fields!");
+                const userData = { ...data, wallet: 0, isAdmin: false, createdAt: Date.now() };
+                await db.collection('artifacts').doc(MASTER_KEY).collection('public').doc('data').collection('users').add(userData);
+                onAuth(userData);
+            } else {
+                if(data.mobile==='admin' && data.pin==='admin') onAuth({name: 'Master Admin', isAdmin: true, wallet: 99999, mobile: 'admin'});
+                else {
+                    const u = players.find(x => x.mobile === data.mobile && x.pin === data.pin);
+                    if(u) onAuth(u); else alert("Invalid Pin or Mobile!");
+                }
+            }
+            setLoading(false);
           };
 
           return (
-            <div className="card-dark rounded-2xl overflow-hidden shadow-xl mb-4 transition-all hover:border-gold/30">
-              <div className="p-5 flex justify-between items-center bg-[#0d0d0d] border-b border-[#111]">
-                <div><h3 className="text-xl font-black italic uppercase leading-none">{m.label}</h3><p className="text-[9px] text-gray-500 font-bold mt-1 tracking-widest leading-none">{m.mode}</p></div>
-                {myReg ? (
-                   myReg.status === 'approved' ? <span className="bg-green-600 text-white text-[9px] font-black px-3 py-1 rounded-full shadow-lg">Joined ✅</span> : 
-                   <span className="bg-[#111] text-gray-400 text-[9px] font-black px-3 py-1 rounded-full border border-[#222] animate-pulse">PENDING</span>
-                ) : (isFull ? <span className="bg-red-600 text-white text-[9px] font-black px-3 py-1 rounded-full">FULL</span> : <span className="text-gold text-[9px] font-black uppercase tracking-widest italic live-indicator">Open Now</span>)}
-              </div>
+            <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-[#0f0c29]">
+               <div className="w-full max-w-sm space-y-8 animate-view">
+                  <div className="text-center space-y-2">
+                     <div className="w-24 h-24 bg-purple-main rounded-full mx-auto p-1 shadow-2xl border-4 border-white/5">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=ff-pro" className="w-full h-full bg-[#1a1a2e] rounded-full" />
+                     </div>
+                     <h2 className="text-4xl font-black uppercase italic leading-none">{mode === 'signup' ? 'JOIN PRO' : 'WELCOME'}</h2>
+                     <p className="text-xs text-white/40 uppercase tracking-widest">{mode === 'signup' ? 'Create a new account' : 'Enter arena credentials'}</p>
+                  </div>
 
-              <div className="p-5 space-y-4">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-[9px] font-black uppercase text-gray-500"><span>Arena Capacity</span><span>{approved} / {m.slots}</span></div>
-                  <div className="w-full h-1.5 bg-[#111] rounded-full border border-[#222] p-0.5"><div className="h-full bg-gold rounded-full slot-fill shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{width:`${progress}%`}}></div></div>
-                </div>
-
-                {!myReg ? <button onClick={()=>setModal(true)} disabled={isFull} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic font-black">Join Tournament</button> :
-                 myReg.status === 'pending' ? <button className="w-full bg-[#0a0a0a] border border-[#1a1a1a] text-gray-600 py-4 rounded-xl font-bold uppercase text-[10px] italic">Verification in Progress...</button> :
-                 <div className="bg-black p-4 rounded-xl border border-green-500/20 text-center space-y-2">
-                    {isLive ? <><div className="flex justify-between text-xs px-2 font-black text-gray-500 uppercase"><span>Room ID:</span><span className="text-green-500 font-mono text-sm">{m.roomId || 'WAIT'}</span></div><div className="flex justify-between text-xs px-2 font-black text-gray-500 uppercase"><span>Pass:</span><span className="text-green-500 font-mono text-sm">{m.roomPass || 'WAIT'}</span></div></> : <p className="text-[10px] text-gray-500 font-bold italic uppercase tracking-tighter">Details drop at {m.label}</p>}
-                 </div>}
-
-                <div className="grid grid-cols-2 gap-4 text-center border-t border-[#111] pt-3 font-bold uppercase italic">
-                   <div><p className="text-[8px] text-gray-600">Win Prize</p><p className="text-gold text-sm">₹{m.prize}</p></div>
-                   <div><p className="text-[8px] text-gray-600">Entry fee</p><p className="text-gold text-sm">₹{m.fee}</p></div>
-                </div>
-              </div>
-
-              {modal && <div className="fixed inset-0 bg-black/98 backdrop-blur-xl z-[200] flex items-center justify-center p-6 overflow-y-auto">
-                <div className="bg-[#0f0f0f] border border-white/5 w-full rounded-[2.5rem] p-8 space-y-6 my-auto shadow-2xl relative animate-in slide-in-from-bottom-4">
-                   <div className="text-center space-y-1"><h3 className="text-2xl font-black text-gold italic uppercase leading-none font-black tracking-tighter">Secure Slot</h3><p className="text-[9px] text-gray-500 uppercase tracking-widest italic">Submit Details for Slot Approval</p></div>
-                   <img src="./1000087879.jpg" className="w-40 h-40 mx-auto rounded-2xl border-2 border-white shadow-2xl" onError={e=>e.target.src="https://placehold.co/200x200?text=Scan+QR"} />
-                   
-                   <div className="space-y-4 font-bold">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1"><label className="text-[8px] text-gray-600 uppercase font-black ml-1">IGN Confirm</label><input type="text" value={confirmIgn} onChange={e=>setConfirmIgn(e.target.value)} className="w-full bg-black border border-[#222] p-3 rounded-xl text-[10px] font-bold text-white outline-none focus:border-gold" /></div>
-                        <div className="space-y-1"><label className="text-[8px] text-gray-600 uppercase font-black ml-1">UID Confirm</label><input type="text" value={confirmUid} onChange={e=>setConfirmUid(e.target.value)} className="w-full bg-black border border-[#222] p-3 rounded-xl text-[10px] font-bold text-white outline-none focus:border-gold" /></div>
-                      </div>
-                      <input type="text" id="final_utr_master" placeholder="12 Digit Transaction UTR" className="w-full bg-[#050505] border border-gold/30 p-4 rounded-2xl text-sm font-black focus:border-gold outline-none text-white text-center shadow-inner font-mono" />
-                   </div>
-                   <button onClick={()=>join(document.getElementById('final_utr_master').value)} disabled={load} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest italic">{load?'Authorizing...':'Send Request ✅'}</button>
-                   <button onClick={()=>setModal(false)} className="w-full text-[10px] text-gray-600 font-black uppercase text-center tracking-widest italic opacity-50">Back</button>
-                </div>
-              </div>}
+                  <form className="space-y-4" onSubmit={handleAuth}>
+                     {mode === 'signup' && (
+                       <>
+                        <div className="relative"><input type="text" placeholder="Refer ID (Optional)" className="input-dark w-full p-4 rounded-2xl text-sm" onChange={e=>setData({...data, refer: e.target.value})} /><span className="absolute right-3 top-3 text-[9px] bg-purple-600 px-3 py-1.5 rounded-xl font-bold">Verify</span></div>
+                        <input type="text" placeholder="Your Full Name" className="input-dark w-full p-4 rounded-2xl text-sm" onChange={e=>setData({...data, name: e.target.value})} />
+                        <input type="email" placeholder="Your Email Address" className="input-dark w-full p-4 rounded-2xl text-sm" onChange={e=>setData({...data, email: e.target.value})} />
+                       </>
+                     )}
+                     <input type="text" placeholder="Mobile Number" className="input-dark w-full p-4 rounded-2xl text-sm" onChange={e=>setData({...data, mobile: e.target.value})} />
+                     <input type="password" placeholder="Passcode / PIN" className="input-dark w-full p-4 rounded-2xl text-sm" onChange={e=>setData({...data, pin: e.target.value})} />
+                     
+                     <button type="submit" disabled={loading} className="w-full btn-purple py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-xl shadow-purple-500/20">{loading?'Connecting...':(mode==='signup'?'SIGN UP':'LOGIN')}</button>
+                  </form>
+                  
+                  <p className="text-center text-xs text-white/30 font-bold uppercase tracking-wider">
+                     {mode === 'login' ? "New Player? " : "Already Hunter? "}
+                     <span onClick={()=>setMode(mode==='login'?'signup':'login')} className="text-purple-400 border-b border-purple-500 ml-1">Click here</span>
+                  </p>
+               </div>
             </div>
           );
         }
 
-        function HistoryView({ list, regs, user }) {
-          const myRegs = regs.filter(r => r.email === user.email);
+        // --- VIEWS ---
+        function HomeView({ setView, setTab }) {
           return (
-            <div className="space-y-6 animate-in slide-in-from-bottom-5">
-              <div className="space-y-1"><p className="text-gold font-black italic text-[10px] tracking-widest uppercase">// MISSION LOG</p><h2 className="text-4xl font-black uppercase italic tracking-tighter leading-none italic font-black text-white text-center sm:text-left">RECORDS</h2></div>
-              <div className="space-y-4">
-                 {myRegs.map(r => (
-                   <div key={r.id} className="mission-log p-5 shadow-xl">
-                      <div className="flex justify-between items-start mb-4">
-                         <div><p className="text-[8px] text-gray-600 font-black uppercase mb-0.5 italic tracking-widest">{r.mode}</p><h4 className="text-2xl font-black italic tracking-tighter leading-none text-white">{r.label}</h4></div>
-                         <div className={`px-3 py-1 rounded text-[8px] font-black uppercase border ${r.status==='approved'?'bg-green-600/10 text-green-500 border-green-600/20':'bg-gold/10 text-gold border-gold/20'}`}>{r.status==='approved'?'Verified':'Reviewing'}</div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-y-4 pt-2 border-t border-white/5">
-                         <div><p className="text-[8px] text-gray-600 font-bold uppercase mb-1 leading-none italic">IGN Name</p><p className="text-sm font-black text-white italic truncate uppercase">{r.ign}</p></div>
-                         <div><p className="text-[8px] text-gray-600 font-bold uppercase mb-1 leading-none italic">Game UID</p><p className="text-sm font-black text-white font-mono uppercase">{r.uid}</p></div>
-                      </div>
-                   </div>
-                 ))}
-                 {myRegs.length === 0 && <p className="py-20 text-center opacity-30 italic font-black uppercase text-xs border border-dashed border-[#222] rounded-3xl">No battle history found</p>}
-              </div>
+            <div className="space-y-8 animate-view">
+               <div className="bg-purple-main p-8 rounded-[2.5rem] relative overflow-hidden shadow-2xl shadow-purple-900/20">
+                  <div className="relative z-10 space-y-2">
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 italic leading-none">Apex Hub Special</p>
+                     <h3 className="text-2xl font-black leading-tight italic uppercase">Join Pro Matches <br/> & Win Massive Rewards</h3>
+                     <button onClick={()=>setView('arena')} className="bg-white text-purple-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase mt-4 flex items-center gap-2">Play Now <i data-lucide="arrow-up-right" className="w-3 h-3"></i></button>
+                  </div>
+                  <div className="absolute -right-4 -bottom-6 opacity-10"><i data-lucide="gamepad-2" style={{width: 140, height: 140}}></i></div>
+               </div>
+
+               <div className="space-y-4">
+                  <h4 className="text-lg font-black uppercase italic tracking-tighter">E-sports Categories</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                     {[
+                       {t: 'Solo Match', i: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ff1', tab: 'SOLO'},
+                       {t: 'Squad CS', i: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ff2', tab: 'SQUAD'},
+                       {t: 'Duo Battle', i: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ff3', tab: 'DUO'},
+                       {t: 'Only Headshot', i: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ff4', tab: 'SOLO'}
+                     ].map((c,idx) => (
+                        <div key={idx} onClick={()=>{setTab(c.tab); setView('arena');}} className="card-purple p-4 space-y-3 cursor-pointer hover:bg-white/10 transition-all border border-white/5">
+                           <img src={c.i} className="w-full h-24 object-cover bg-black/40 rounded-2xl" />
+                           <p className="text-[10px] font-black uppercase text-center tracking-widest">{c.t}</p>
+                        </div>
+                     ))}
+                  </div>
+               </div>
             </div>
           );
         }
 
-        function ProfileView({ user, players }) {
-            const p = players.find(x => x.email === user.email) || user;
-            return (
-              <div className="space-y-8 animate-in zoom-in-95 duration-500 py-10">
-                <div className="text-center space-y-4">
-                   <div className="w-32 h-32 bg-gold mx-auto rounded-[3rem] p-1 shadow-[0_0_50px_rgba(250,204,21,0.2)]">
-                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.ign}`} className="w-full h-full bg-[#111] rounded-[2.8rem]" alt="Profile" />
-                   </div>
-                   <div className="space-y-1">
-                      <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white leading-tight">{p.ign}</h2>
-                      <p className="text-[10px] text-gold font-bold uppercase tracking-[0.5em] italic leading-none">Apex Level Guard</p>
-                   </div>
-                </div>
+        function ArenaView({ list, regs, tab, setTab, user, db }) {
+          const filtered = list.filter(m => m.mode.includes(tab.split(' ')[0]));
+          return (
+            <div className="space-y-6 animate-view">
+               <div className="flex gap-2 p-1 bg-white/5 rounded-2xl border border-white/10">
+                  {['SOLO CS', 'SQUAD CS', 'DUO'].map(t => (
+                    <button key={t} onClick={()=>setTab(t)} className={`flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all ${tab===t?'bg-purple-main shadow-lg':'text-white/40'}`}>{t}</button>
+                  ))}
+               </div>
+               <div className="space-y-5">
+                  {filtered.map(m => <MatchCard key={m.id} m={m} user={user} regs={regs} db={db} />)}
+                  {filtered.length === 0 && <div className="py-20 text-center opacity-30 italic font-black uppercase text-xs">No arenas active</div>}
+               </div>
+            </div>
+          );
+        }
 
-                <div className="grid gap-4">
-                   <div className="card-dark p-5 rounded-2xl flex items-center gap-4 border-l-4 border-l-gold shadow-lg shadow-black">
-                      <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center text-gold"><i data-lucide="mail" className="w-5 h-5"></i></div>
-                      <div><p className="text-[8px] text-gray-500 font-black uppercase tracking-widest italic mb-1.5 leading-none">Registered Email</p><p className="font-black text-white italic tracking-widest leading-none">{p.email}</p></div>
-                   </div>
-                   <div className="card-dark p-5 rounded-2xl flex items-center gap-4 border-l-4 border-l-gold shadow-lg shadow-black">
-                      <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center text-gold"><i data-lucide="user" className="w-5 h-5"></i></div>
-                      <div><p className="text-[8px] text-gray-500 font-black uppercase tracking-widest italic mb-1.5 leading-none">Game Global UID</p><p className="font-black text-white italic tracking-widest font-mono leading-none">{p.uid}</p></div>
-                   </div>
-                </div>
+        function MatchCard({ m, user, regs, db }) {
+          const [modal, setModal] = useState(false);
+          const [ign, setIgn] = useState(user.name);
+          const [uid, setUid] = useState('');
+
+          const myReg = regs.find(r => r.matchId === m.id && r.mobile === user.mobile);
+          const approved = regs.filter(r => r.matchId === m.id && r.status === 'approved').length;
+          const progress = Math.min((approved / m.slots) * 100, 100);
+
+          const submitJoin = async () => {
+             if(!uid) return alert("UID is Required!");
+             await db.collection('artifacts').doc(MASTER_KEY).collection('public').doc('data').collection('registrations').add({
+                matchId: m.id, mobile: user.mobile, ign, uid, 
+                status: 'pending', time: Date.now(), label: m.label, mode: m.mode, fee: m.fee
+             });
+             setModal(false);
+          };
+
+          return (
+            <div className="card-purple overflow-hidden shadow-2xl">
+               <div className="p-5 flex justify-between items-center border-b border-white/5">
+                  <div><h4 className="text-xl font-black uppercase italic leading-none">{m.label}</h4><p className="text-[9px] text-white/40 mt-1 uppercase font-bold tracking-widest">{m.mode}</p></div>
+                  {myReg ? (
+                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase ${myReg.status==='approved'?'bg-green-500/20 text-green-400 border border-green-500/30':'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse'}`}>{myReg.status==='approved'?'Joined':'Pending'}</span>
+                  ) : <span className="text-purple-400 text-[10px] font-black uppercase tracking-widest italic">Upcoming</span>}
+               </div>
+               
+               <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-3 gap-2">
+                     <div className="bg-white/5 p-3 rounded-2xl text-center space-y-1"><p className="text-[8px] text-white/30 uppercase font-black">Prize</p><p className="text-sm font-black italic">₹{m.prize}</p></div>
+                     <div className="bg-white/5 p-3 rounded-2xl text-center space-y-1"><p className="text-[8px] text-white/30 uppercase font-black">Per Kill</p><p className="text-sm font-black italic">₹{m.perKill || 0}</p></div>
+                     <div className="bg-white/5 p-3 rounded-2xl text-center space-y-1"><p className="text-[8px] text-white/30 uppercase font-black">Entry</p><p className="text-sm font-black italic text-purple-400">₹{m.fee}</p></div>
+                  </div>
+
+                  <div className="space-y-2">
+                     <div className="flex justify-between text-[10px] font-black uppercase text-white/40 px-1"><span>Map: Bermuda</span><span>{approved}/{m.slots} Players</span></div>
+                     <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-purple-main rounded-full slot-fill" style={{width: `${progress}%`}}></div></div>
+                  </div>
+
+                  {!myReg ? (
+                    <button onClick={()=>setModal(true)} disabled={approved >= m.slots} className="w-full btn-purple py-4 rounded-2xl font-black uppercase text-xs italic tracking-widest">Enroll in Battle</button>
+                  ) : (
+                    myReg.status === 'approved' ? (
+                       <div className="bg-green-500/10 p-4 rounded-2xl border border-green-500/20 text-center animate-view">
+                          <p className="text-[10px] text-green-400 font-bold uppercase mb-2">Room Access Secured</p>
+                          <div className="flex justify-between text-xs px-2 font-mono"><span className="text-white/40">ID:</span><span className="text-white font-black select-all">{m.roomId || 'WAITING'}</span></div>
+                          <div className="flex justify-between text-xs px-2 font-mono mt-1"><span className="text-white/40">PASS:</span><span className="text-white font-black select-all">{m.roomPass || 'WAITING'}</span></div>
+                       </div>
+                    ) : <button className="w-full bg-white/5 border border-white/10 py-4 rounded-2xl text-[10px] font-black text-white/30 uppercase italic cursor-not-allowed">Checking Proof...</button>
+                  )}
+               </div>
+
+               {modal && (
+                 <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6">
+                    <div className="card-purple w-full p-8 space-y-6 animate-view">
+                       <h3 className="text-center text-2xl font-black uppercase italic leading-none underline decoration-purple-600 underline-offset-8">Verify Entry</h3>
+                       <div className="bg-purple-600/10 p-5 rounded-3xl border border-purple-600/20 text-center space-y-1">
+                          <p className="text-xs text-white/50 uppercase font-black italic">Wallet Balance</p>
+                          <p className="text-3xl font-black italic text-white">₹{user.wallet || 0}</p>
+                       </div>
+                       <div className="space-y-4">
+                          <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-white/30 ml-1">Confirm IGN</label><input type="text" value={ign} className="input-dark w-full p-4 rounded-2xl text-sm font-bold" onChange={e=>setIgn(e.target.value)} /></div>
+                          <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-white/30 ml-1">Enter Player UID</label><input type="text" placeholder="e.g. 12345678" className="input-dark w-full p-4 rounded-2xl text-sm font-bold" onChange={e=>setUid(e.target.value)} /></div>
+                       </div>
+                       <div className="text-center space-y-4">
+                          <p className="text-[10px] text-red-400 font-bold uppercase tracking-tighter">₹{m.fee} will be deducted from your wallet</p>
+                          <div className="flex gap-3">
+                             <button onClick={()=>setModal(false)} className="flex-1 py-4 bg-white/5 rounded-2xl text-xs font-black uppercase">Cancel</button>
+                             <button onClick={submitJoin} className="flex-1 py-4 btn-purple rounded-2xl text-xs font-black uppercase">Join Battle</button>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+               )}
+            </div>
+          );
+        }
+
+        function WalletView({ user, db }) {
+            const [wMode, setWMode] = useState('deposit');
+            const [amt, setAmt] = useState('');
+            
+            return (
+              <div className="space-y-8 animate-view">
+                 <div className="bg-purple-main p-10 rounded-[3rem] text-center space-y-2 shadow-2xl relative overflow-hidden">
+                    <div className="relative z-10">
+                       <p className="text-xs font-bold uppercase text-white/60 tracking-widest italic">Hunter Balance</p>
+                       <h2 className="text-6xl font-black italic tracking-tighter leading-none">₹{user.wallet || 0}</h2>
+                    </div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16"></div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-4">
+                    <button onClick={()=>setWMode('deposit')} className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${wMode==='deposit'?'bg-purple-main shadow-lg border-transparent':'bg-white/5 border-white/10 text-white/40'}`}>Add Money</button>
+                    <button onClick={()=>setWMode('withdraw')} className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${wMode==='withdraw'?'bg-purple-main shadow-lg border-transparent':'bg-white/5 border-white/10 text-white/40'}`}>Withdraw</button>
+                 </div>
+
+                 <div className="card-purple p-8 space-y-6 border border-white/10">
+                    <h4 className="text-lg font-black uppercase italic leading-none">{wMode === 'deposit' ? 'Add Funds' : 'Withdraw Earnings'}</h4>
+                    <div className="grid grid-cols-4 gap-2">
+                       {[50, 100, 200, 500].map(v => (
+                         <button key={v} onClick={()=>setAmt(v)} className="bg-white/5 py-3 rounded-xl text-[10px] font-black border border-white/10 hover:border-purple-500 transition-all font-mono">₹{v}</button>
+                       ))}
+                    </div>
+                    <input type="number" value={amt} placeholder="Custom Amount" className="input-dark w-full p-5 rounded-2xl text-lg font-black text-center" onChange={e=>setAmt(e.target.value)} />
+                    <button className="w-full btn-purple py-5 rounded-[2rem] font-black uppercase text-xs italic tracking-widest shadow-xl">{wMode === 'deposit' ? 'Continue To Payment' : 'Send Withdrawal Request'}</button>
+                 </div>
               </div>
             );
         }
 
-        function RewardsView({ user, players, db }) {
-          const p = players.find(x => x.email === user.email);
-          const streak = p?.streak || [];
-          const today = new Date().toDateString();
-          const canClaim = p?.lastLogin !== today;
-          const handleClaim = async () => {
-             if(!canClaim) return alert("Already marked for today!");
-             const ref = db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('users').doc(p.id);
-             await ref.update({ lastLogin: today, streak: [...streak, today] });
-             alert("Attendance Signed! Day " + (streak.length + 1) + " Secured.");
-          };
-          return (
-            <div className="space-y-10 animate-in zoom-in-95 text-center py-10 px-2">
-               <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none text-white underline decoration-gold decoration-4 underline-offset-8 italic font-black">ELITE STREAK</h2>
-               <div className="grid grid-cols-4 gap-4">
-                 {[1,2,3,4,5,6,7].map(d => (
-                   <div key={d} className={`aspect-square rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${streak.length >= d ? 'bg-gold border-gold text-black shadow-lg shadow-gold/30' : 'bg-[#0a0a0a] border-[#1a1a1a] text-gray-700'}`}><p className="font-black text-xl italic">{d}</p></div>
-                 ))}
-               </div>
-               <button onClick={handleClaim} disabled={!canClaim} className={`w-full py-6 rounded-[2rem] font-black uppercase italic shadow-2xl transition-all ${canClaim ? 'btn-gold shadow-gold/20' : 'bg-[#111] text-gray-700 cursor-not-allowed'}`}>{canClaim ? 'Sign Presence' : 'Logged for Today ✅'}</button>
-            </div>
-          );
+        function ProfileView({ user, setView }) {
+            return (
+              <div className="space-y-8 py-10 animate-view">
+                 <div className="text-center space-y-4">
+                    <div className="w-32 h-32 bg-purple-main mx-auto rounded-[3.5rem] p-1 shadow-2xl border-4 border-white/5">
+                       <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} className="w-full h-full bg-[#1a1a2e] rounded-[3.3rem]" />
+                    </div>
+                    <div>
+                       <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white leading-none">{user.name}</h2>
+                       <p className="text-[10px] text-purple-400 font-bold uppercase tracking-widest italic mt-2">Hunter Rank: Elite</p>
+                    </div>
+                 </div>
+
+                 <div className="space-y-3">
+                    {[
+                      {l: 'My Wallet', i: 'wallet', v: 'wallet'},
+                      {l: 'Match History', i: 'history', v: 'arena'},
+                      {l: 'Terms & Conditions', i: 'shield-check'},
+                      {l: 'About Apex Hub', i: 'info'}
+                    ].map((item, idx) => (
+                      <div key={idx} onClick={()=>item.v && setView(item.v)} className="card-purple p-5 flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all group">
+                         <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-purple-600/10 rounded-xl flex items-center justify-center text-purple-400 transition-all"><i data-lucide={item.i} className="w-5 h-5"></i></div>
+                            <span className="font-bold uppercase text-xs tracking-tight text-white/80">{item.l}</span>
+                         </div>
+                         <i data-lucide="chevron-right" className="w-4 h-4 text-white/20"></i>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            );
         }
 
         function AdminPanel({ list, regs, players, db }) {
           const [atab, setAtab] = useState('match');
-          const [am, setAm] = useState({ label: '6:00 PM', hour: 18, fee: 40, prize: 200, slots: 48, mode: 'SOLO CS' });
+          const [am, setAm] = useState({ label: '7:00 PM', hour: 19, fee: 50, prize: 300, slots: 48, mode: 'SOLO CS', perKill: 0 });
           const pending = regs.filter(r => r.status === 'pending');
+          
+          const deployMatch = async () => {
+             await db.collection('artifacts').doc(MASTER_KEY).collection('public').doc('data').collection('matches').add({ ...am, createdAt: Date.now(), roomId:'', roomPass:'' });
+             alert("Arena Published!");
+          };
+
           return (
-            <div className="space-y-6 pb-20 animate-in fade-in">
-              <div className="grid grid-cols-3 gap-2 bg-[#0a0a0a] p-1 rounded-xl border border-[#1a1a1a]">
-                <button onClick={()=>setAtab('match')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${atab==='match'?'bg-gold text-black shadow-lg':'text-gray-600'}`}>Setup</button>
-                <button onClick={()=>setAtab('verify')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${atab==='verify'?'bg-green-600 text-white shadow-lg':'text-gray-600'}`}>Verify ({pending.length})</button>
-                <button onClick={()=>setAtab('hunters')} className={`py-3 text-[9px] font-black uppercase rounded-lg ${atab==='hunters'?'bg-blue-600 text-white shadow-lg':'text-gray-600'}`}>Hunters</button>
+            <div className="space-y-6 pb-20 animate-view">
+              <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10">
+                {['match', 'verify', 'hunters'].map(t => (
+                  <button key={t} onClick={()=>setAtab(t)} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${atab===t?'bg-purple-600 text-white shadow-lg':'text-white/30'}`}>{t}</button>
+                ))}
               </div>
 
               {atab === 'match' && (
-                <div className="space-y-5 animate-in slide-in-from-top-4">
-                   <div className="bg-[#0f0f0f] p-6 rounded-3xl border border-[#1a1a1a] space-y-4 shadow-2xl border-t-2 border-t-blue-900">
-                      <h3 className="text-[10px] font-black text-blue-500 uppercase italic">Deploy Battlefield</h3>
-                      <div className="grid grid-cols-2 gap-3 italic uppercase font-bold">
-                         <select onChange={e=>setAm({...am, mode:e.target.value})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-black uppercase text-white shadow-inner"><option value="SOLO CS">Solo CS</option><option value="SQUAD CS">Squad CS</option></select>
-                         <input type="number" placeholder="Slots" onChange={e=>setAm({...am, slots:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                         <input type="number" placeholder="Hr(24h)" onChange={e=>setAm({...am, hour:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                         <input type="text" placeholder="Label" onChange={e=>setAm({...am, label:e.target.value})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                         <input type="number" placeholder="Fee" onChange={e=>setAm({...am, fee:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
-                         <input type="number" placeholder="Prize" onChange={e=>setAm({...am, prize:Number(e.target.value)})} className="bg-black border border-[#222] p-4 rounded-xl text-xs font-bold shadow-inner" />
+                <div className="space-y-5">
+                   <div className="card-purple p-8 space-y-4 shadow-2xl border-t-4 border-t-purple-600">
+                      <h3 className="text-[10px] font-black uppercase italic tracking-widest text-purple-400">Initialize Arena</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                         <select onChange={e=>setAm({...am, mode:e.target.value})} className="input-dark w-full p-4 rounded-xl text-xs uppercase"><option value="SOLO CS">Solo CS</option><option value="SQUAD CS">Squad CS</option></select>
+                         <input type="number" placeholder="Slots" className="input-dark w-full p-4 rounded-xl text-xs" onChange={e=>setAm({...am, slots:Number(e.target.value)})} />
+                         <input type="number" placeholder="Hour" className="input-dark w-full p-4 rounded-xl text-xs" onChange={e=>setAm({...am, hour:Number(e.target.value)})} />
+                         <input type="text" placeholder="Label" className="input-dark w-full p-4 rounded-xl text-xs" onChange={e=>setAm({...am, label:e.target.value})} />
+                         <input type="number" placeholder="Fee" className="input-dark w-full p-4 rounded-xl text-xs" onChange={e=>setAm({...am, fee:Number(e.target.value)})} />
+                         <input type="number" placeholder="Prize" className="input-dark w-full p-4 rounded-xl text-xs" onChange={e=>setAm({...am, prize:Number(e.target.value)})} />
                       </div>
-                      <button onClick={async ()=>{
-                         const col = db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('matches');
-                         await col.add({ ...am, createdAt: Date.now(), roomId:'', roomPass:'' });
-                         alert("Battle Published!");
-                      }} className="w-full btn-gold py-4 rounded-xl text-xs uppercase shadow-xl tracking-widest font-black italic border-b-4 border-b-yellow-800">Publish Arena Config</button>
+                      <button onClick={deployMatch} className="w-full btn-purple py-5 rounded-[2rem] text-sm font-black uppercase italic tracking-widest shadow-xl">Deploy Configuration</button>
                    </div>
                    {list.map(t => (
-                      <div key={t.id} className="bg-[#0d0d0d] p-4 rounded-2xl border border-[#1a1a1a] space-y-3 shadow-xl">
-                         <div className="flex justify-between items-center text-[10px] font-black uppercase italic tracking-widest"><span>{t.label} {t.mode}</span><button onClick={()=>db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('matches').doc(t.id).delete()}><i data-lucide="trash-2" className="w-4 h-4 text-red-600 opacity-60"></i></button></div>
+                      <div key={t.id} className="card-purple p-5 space-y-4">
+                         <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-widest"><span>{t.label} {t.mode}</span><button onClick={()=>db.collection('artifacts').doc(MASTER_KEY).collection('public').doc('data').collection('matches').doc(t.id).delete()}><i data-lucide="trash-2" className="w-4 h-4 text-red-500"></i></button></div>
                          <div className="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Room ID" className="bg-black border border-[#222] p-2.5 rounded-lg text-xs font-mono font-black text-gold text-center outline-none shadow-inner" onBlur={e=>db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('matches').doc(t.id).update({roomId:e.target.value})} defaultValue={t.roomId} />
-                            <input type="text" placeholder="Pass" className="bg-black border border-[#222] p-2.5 rounded-lg text-xs font-mono font-black text-gold text-center outline-none shadow-inner" onBlur={e=>db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('matches').doc(t.id).update({roomPass:e.target.value})} defaultValue={t.roomPass} />
+                            <input type="text" placeholder="Room ID" className="input-dark p-3 rounded-xl text-xs font-mono text-center" onBlur={e=>db.collection('artifacts').doc(MASTER_KEY).collection('public').doc('data').collection('matches').doc(t.id).update({roomId:e.target.value})} defaultValue={t.roomId} />
+                            <input type="text" placeholder="Pass" className="input-dark p-3 rounded-xl text-xs font-mono text-center" onBlur={e=>db.collection('artifacts').doc(MASTER_KEY).collection('public').doc('data').collection('matches').doc(t.id).update({roomPass:e.target.value})} defaultValue={t.roomPass} />
                          </div>
                       </div>
                    ))}
@@ -349,101 +440,38 @@
               {atab === 'verify' && (
                 <div className="space-y-4">
                   {pending.map(r => (
-                    <div key={r.id} className="bg-[#0d0d0d] border-l-4 border-gold p-6 rounded-2xl space-y-4 shadow-2xl animate-in zoom-in-95">
+                    <div key={r.id} className="card-purple p-6 border-l-4 border-l-yellow-400 space-y-4">
                       <div className="flex justify-between items-start">
-                         <div><h4 className="text-xl font-black italic uppercase leading-none text-white tracking-tighter italic font-black">{r.ign}</h4><p className="text-[10px] text-gray-600 font-bold mt-1 tracking-widest uppercase italic leading-none font-black italic text-white">Email: {r.email} | UID: {r.uid}</p></div>
-                         <p className="text-[10px] font-black text-gold uppercase italic">{r.label}</p>
+                         <div className="space-y-1"><h4 className="text-xl font-black uppercase italic leading-none">{r.ign}</h4><p className="text-[9px] text-white/40 font-bold uppercase italic leading-none tracking-widest">M: {r.mobile} | UID: {r.uid}</p></div>
+                         <p className="text-[10px] font-black text-purple-400 uppercase italic">{r.label}</p>
                       </div>
-                      <div className="bg-black p-4 rounded-xl border border-[#222] text-center text-sm font-mono text-gold font-black select-all tracking-widest shadow-inner italic font-black uppercase font-mono">UTR: {r.utr}</div>
+                      <div className="bg-black/40 p-4 rounded-xl border border-white/5 text-center text-sm font-mono text-purple-400 font-black tracking-widest uppercase">UTR: {r.utr || 'WALLET'}</div>
                       <div className="flex gap-4">
-                        <button onClick={()=>db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('registrations').doc(r.id).update({status:'approved'})} className="flex-1 bg-green-600 text-white py-4 rounded-xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all font-black italic">Approve ✅</button>
-                        <button onClick={()=>db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('registrations').doc(r.id).delete()} className="flex-1 bg-gray-900 text-gray-600 py-4 rounded-xl text-[10px] font-black uppercase hover:text-red-500 transition-all font-black italic">Reject ❌</button>
+                        <button onClick={()=>db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('registrations').doc(r.id).update({status:'approved'})} className="flex-1 bg-green-600 text-white py-4 rounded-2xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all">Approve ✅</button>
+                        <button onClick={()=>db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('registrations').doc(r.id).delete()} className="flex-1 bg-red-600/10 text-red-500 py-4 rounded-2xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Reject ❌</button>
                       </div>
                     </div>
                   ))}
+                  {pending.length === 0 && <div className="py-20 text-center opacity-30 uppercase font-black italic text-xs tracking-widest">No pending requests</div>}
                 </div>
               )}
 
               {atab === 'hunters' && (
                 <div className="space-y-4">
-                   <h3 className="text-[11px] font-black text-blue-500 uppercase italic px-2 tracking-widest border-b border-blue-900 pb-2 underline decoration-blue-900 decoration-2 underline-offset-4 font-black italic leading-none">Master Hunter Database</h3>
+                   <h3 className="text-[11px] font-black text-purple-400 uppercase italic px-2 tracking-widest border-b border-white/5 pb-2">Master Hunter Database</h3>
                    {players.map(p => (
-                     <div key={p.id} className="bg-[#0d0d0d] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl relative group">
-                        <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-4 mb-4 font-black italic uppercase tracking-tighter leading-none font-black italic"><p className="text-xl text-white">{p.ign}</p><span className="text-[8px] bg-white/5 px-2 py-0.5 rounded text-gray-600">Master</span></div>
+                     <div key={p.id} className="card-purple p-6 shadow-2xl relative overflow-hidden group">
+                        <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-4 font-black italic uppercase tracking-tighter leading-none italic"><p className="text-xl text-white">{p.name}</p><span className="text-[8px] bg-purple-600/20 px-2 py-0.5 rounded text-purple-400 uppercase font-bold tracking-widest leading-none italic">Verified Elite</span></div>
                         <div className="grid grid-cols-2 gap-y-5 text-[11px] font-black italic uppercase tracking-tighter leading-none italic font-black">
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2 leading-none">Email Address</p><p className="text-gold font-mono text-xs tracking-tighter leading-none truncate">{p.email}</p></div>
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2 leading-none">Secret Pin</p><p className="text-gold font-mono text-sm tracking-tighter leading-none">{p.pw}</p></div>
-                           <div><p className="text-gray-600 text-[8px] uppercase tracking-widest mb-2 leading-none">Hunter UID</p><p className="text-white font-mono text-sm tracking-tighter leading-none">{p.uid}</p></div>
-                           <button onClick={async () => { if(confirm("Permanently wipe profile?")) await db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('users').doc(p.id).delete(); }} className="text-[10px] text-red-600/40 font-black uppercase self-end text-right hover:text-red-500 transition-all font-black italic underline decoration-red-900 leading-none italic">Remove 🗑️</button>
+                           <div><p className="text-white/30 text-[8px] uppercase tracking-widest mb-1.5 font-black italic leading-none">Phone Number</p><p className="text-white font-mono text-sm tracking-tighter leading-none">{p.mobile}</p></div>
+                           <div><p className="text-white/30 text-[8px] uppercase tracking-widest mb-1.5 font-black italic leading-none">Security Pin</p><p className="text-purple-400 font-mono text-sm tracking-tighter leading-none font-black">{p.pin}</p></div>
+                           <div><p className="text-white/30 text-[8px] uppercase tracking-widest mb-1.5 font-black italic leading-none">Player UID</p><p className="text-white font-mono text-sm tracking-tighter leading-none italic">{p.uid || 'NA'}</p></div>
+                           <button onClick={async () => { if(confirm("Confirm Wipe Profile?")) await db.collection('artifacts').doc(MASTER_KEY).collection('public').doc('data').collection('users').doc(p.id).delete(); }} className="text-[10px] text-red-600/40 font-black uppercase self-end text-right hover:text-red-500 transition-all italic underline decoration-red-900 leading-none italic">Remove 🗑️</button>
                         </div>
                      </div>
                    ))}
                 </div>
               )}
-            </div>
-          );
-        }
-
-        function AuthScreen({ onAuth, players, ready, db }) {
-          const [id, setId] = useState('');
-          const [pw, setPw] = useState('');
-          const [fign, setFign] = useState('');
-          const [fuid, setFuid] = useState('');
-          const [mode, setMode] = useState('login');
-          const [load, setLoad] = useState(false);
-          const [err, setErr] = useState('');
-
-          const submitAuth = async (e) => {
-             if(e) e.preventDefault();
-             if(!id || !pw) return alert("Fill all fields!");
-             setLoad(true); setErr('');
-
-             const finalEmail = id; // User provides full email now
-
-             try {
-                if(mode === 'register') {
-                   if(!fign || !fuid) { alert("Details missing!"); setLoad(false); return; }
-                   await auth.createUserWithEmailAndPassword(finalEmail, pw);
-                   const userData = { email: finalEmail, pw, ign: fign, uid: fuid, isAdmin: false, streak: [] };
-                   await db.collection('artifacts').doc(MASTER_PATH).collection('public').doc('data').collection('users').add(userData);
-                   onAuth(userData);
-                } else {
-                   if(id === 'admin' && pw === 'admin') onAuth({email:'admin@apex.com', ign:'Elite Master Admin', isAdmin:true});
-                   else {
-                      await auth.signInWithEmailAndPassword(finalEmail, pw);
-                      const u = players.find(x => x.email === finalEmail);
-                      if(u) onAuth(u); else { setErr('Access Denied: Invalid Credentials.'); setLoad(false); }
-                   }
-                }
-             } catch (error) {
-                setErr(error.message);
-             }
-             setLoad(false);
-          };
-
-          return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-[#050505] font-sans italic">
-              <div className="w-full max-w-sm text-center space-y-10 animate-in fade-in duration-700">
-                <div className="space-y-4"><div className="flex items-center justify-center gap-3"><div className="w-14 h-14 bg-gold rounded-2xl flex items-center justify-center text-black shadow-xl shadow-gold/20 leading-none italic font-black"><i data-lucide="target" className="w-8 h-8"></i></div><div><h1 className="text-5xl font-black italic text-white leading-none uppercase tracking-tighter italic font-black">APEX HUB</h1><p className="text-[10px] text-gold font-bold uppercase tracking-[0.4em] mt-1 italic font-black leading-none italic">Sultanpur Elite Arena</p></div></div></div>
-                <div className="bg-[#111] p-10 rounded-[3.5rem] border border-[#1a1a1a] shadow-2xl space-y-8 relative overflow-hidden group shadow-black">
-                  <div className="flex bg-[#050505] p-1.5 rounded-2xl border border-[#1a1a1a] shadow-inner">
-                    <button onClick={()=>setMode('login')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${mode==='login'?'bg-gold text-black shadow-lg shadow-gold/20 font-black':'text-gray-600'}`}>Sign In</button>
-                    <button onClick={()=>setMode('register')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${mode==='register'?'bg-gold text-black shadow-lg shadow-gold/20 font-black':'text-gray-500'}`}>New Hunter</button>
-                  </div>
-                  <form className="space-y-5" onSubmit={submitAuth}>
-                    <input type="email" placeholder="Email Address" value={id} onChange={e=>setId(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none text-white tracking-widest uppercase font-mono shadow-inner leading-none italic" />
-                    <input type="password" placeholder="Passcode / Pin" value={pw} onChange={e=>setPw(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none text-white tracking-widest uppercase font-mono shadow-inner leading-none italic" />
-                    {mode === 'register' && (
-                       <div className="space-y-5 animate-in slide-in-from-top-4">
-                          <input type="text" placeholder="Combat Name (IGN)" value={fign} onChange={e=>setFign(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none text-white tracking-widest uppercase shadow-inner leading-none italic" />
-                          <input type="number" placeholder="Free Fire UID" value={fuid} onChange={e=>setFuid(e.target.value)} className="w-full bg-[#050505] border border-[#222] p-5 rounded-3xl text-sm font-black focus:border-gold outline-none text-white tracking-widest uppercase shadow-inner leading-none italic" />
-                       </div>
-                    )}
-                    {err && <div className="bg-red-600/10 border border-red-600/30 p-4 rounded-xl text-[10px] font-black text-red-500 uppercase italic tracking-widest leading-none text-center italic">{err}</div>}
-                    <button type="submit" disabled={load} className="w-full btn-gold py-6 rounded-2xl text-sm uppercase shadow-xl border-b-4 border-yellow-700 active:translate-y-1 transition-all italic font-black tracking-widest leading-none">{load?'AUTHORIZING...':(mode==='login'?'ENGAGE ARENA':'CREATE PROFILE')}</button>
-                  </form>
-                </div>
-              </div>
             </div>
           );
         }
@@ -454,3 +482,5 @@
     </script>
 </body>
 </html>
+
+```
